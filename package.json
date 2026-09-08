@@ -1,0 +1,9 @@
+{
+  "name": "citable-scripts",
+  "private": true,
+  "type": "module",
+  "description": "JS side of the leaf hash, verified against src/Leaf.sol by forge test",
+  "dependencies": {
+    "viem": "^2.21.0"
+  }
+}
