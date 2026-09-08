@@ -1,4 +1,4 @@
-# Quotebook — Projekt-Manifest
+# Citable — Projekt-Manifest
 
 **Verifizierbares Publishing-Register mit Positionsbeweis**
 
@@ -52,7 +52,7 @@ Im Vorentwurf stand, KI werde nicht als Code-Generator eingesetzt. Das stimmt ni
 
 Zitate aus dem Zusammenhang zu reißen ist die häufigste Form von Desinformation, und es gibt heute keine Infrastruktur, die dagegen hilft: Ein Link bricht, wenn das Original gelöscht wird, und ein Screenshot ist beliebig fälschbar.
 
-Quotebook zerlegt eine Aussage beim Veröffentlichen in Segmente, baut daraus einen Merkle-Baum und legt nur die Wurzel on-chain — signiert vom Autor, gebunden an einen Namen.
+Citable zerlegt eine Aussage beim Veröffentlichen in Segmente, baut daraus einen Merkle-Baum und legt nur die Wurzel on-chain — signiert vom Autor, gebunden an einen Namen.
 
 Wird später ein Fragment zitiert, liefert der Zitierende einen Merkle-Beweis mit, und jeder kann in Sekunden nachrechnen: Dieses Fragment stand wortgleich an Position *i* von *n*, hier sind seine Nachbarn, hier ist das Datum.
 
@@ -99,7 +99,7 @@ Der Volltext liegt auf IPFS. Wer prüfen will, holt den Volltext, baut den Baum 
             ▼                                  ▼
 ┌───────────────────────┐        ┌────────────────────────┐
 │   SEPOLIA CONTRACT    │        │   IPFS (Volltext)      │
-│   QuotebookRegistry   │        │   Pinata oder lokal    │
+│   CitableRegistry     │        │   Pinata oder lokal    │
 │   - registerRoot()    │        └────────────────────────┘
 │   - verifySegment()   │
 │   - getStatement()    │
@@ -149,7 +149,7 @@ Regel für v1, bewusst dumm und robust:
 
 Diese Regel gehört ins README, wortgleich.
 
-### 4.2 QuotebookRegistry.sol
+### 4.2 CitableRegistry.sol
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -157,9 +157,9 @@ pragma solidity ^0.8.24;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-/// @title QuotebookRegistry
+/// @title CitableRegistry
 /// @notice Register für Merkle-Wurzeln von Aussagen, mit Positionsbeweis.
-contract QuotebookRegistry {
+contract CitableRegistry {
     struct Statement {
         address author;
         bytes32 ensNode;
@@ -352,7 +352,7 @@ Heute ist Dienstag, 8. September. Abgabe Mittwoch, 16. September. Ziel: Sonntag,
 | Tag | Datum | Aufgabe |
 |---|---|---|
 | **Heute** | Di 8.9. | `forge init`, erstes Commit. **Blatt-Kompatibilität JS ↔ Solidity beweisen.** ENSv2-Doku sichten, Sepolia-Faucet |
-| 2 | Mi 9.9. | `QuotebookRegistry.sol` + alle sechs Tests grün. **ENS-Entscheidung A oder B** |
+| 2 | Mi 9.9. | `CitableRegistry.sol` + alle sechs Tests grün. **ENS-Entscheidung A oder B** |
 | 3 | Do 10.9. | ENS-Schicht nach Entscheidung. Deploy auf Sepolia per `forge script` |
 | 4 | Fr 11.9. | Next.js aufsetzen, wagmi-Verbindung, **Register-Screen** komplett |
 | 5–6 | Sa 12.9. / So 13.9. | **Verify-Screen**, Nachbarsegmente, drei Zustände. Author-Screen. Ende Tag 6: durchgehender Klickpfad |
@@ -413,7 +413,7 @@ Der Teiltreffer bei 0:45 ist die stärkste Sekunde im Video. Nicht kürzen.
 ## 10. README-Gerüst
 
 ```markdown
-# Quotebook
+# Citable
 Verifiable publishing with position proofs.
 
 ## The problem
@@ -428,7 +428,7 @@ nachträglich änderbar. Ein Register bei einer Firma hätte genau die
 zentrale Instanz, die das Projekt vermeiden soll.
 
 ## Contracts (Sepolia)
-- QuotebookRegistry: 0x… — [Etherscan]
+- CitableRegistry: 0x… — [Etherscan]
 - Kernfunktion: verifySegment() — [Zeilennummer verlinken]
 
 ## Run it
@@ -452,7 +452,7 @@ cd web && npm install && npm run dev
 
 ## Prior art
 C2PA / Content Credentials, Soft Binding Resolution, Numbers Protocol,
-Chainpoint. Quotebook unterscheidet sich durch den Positionsbeweis
+Chainpoint. Citable unterscheidet sich durch den Positionsbeweis
 innerhalb einer Aussage.
 
 ## AI usage
@@ -483,7 +483,7 @@ Der Abschnitt "Prior art" ist kein Eingeständnis von Schwäche. Er zeigt, dass 
 ## 12. Nächster Befehl
 
 ```bash
-forge init quotebook && cd quotebook
+forge init citable && cd citable
 forge install OpenZeppelin/openzeppelin-contracts
 git add . && git commit -m "chore: initial foundry setup"
 ```
