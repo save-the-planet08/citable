@@ -61,10 +61,11 @@ Arbeitstag 2 (Mi 09.09.). Erledigt: Foundry-Setup, OpenZeppelin v5.7.0, Blattfor
 bewiesener JS/Solidity-Parität, `CitableRegistry` mit Positionsbeweis (16 Tests grün),
 Schicht 3 gemessen und entschieden (NLI + Wertprüfung statt Ähnlichkeit).
 
-**Als Nächstes:**
-1. Deploy auf Sepolia per `forge script`
-2. Client-Bibliothek: `segment()`, `buildTree()`, Bündelformat
-3. **ENS-Entscheidung A oder B** (IDEA.md 6) — überfällig, blockiert die Identitätsschicht
+**ENS-Entscheidung gefallen: Weg A** (echtes ENSv2 auf Sepolia). Die deployten Contracts
+sind erreichbar und die Interfaces antworten (`script/js/ens-probe.mjs`) — wir nutzen die
+ENSv2-Registry, statt eine eigene zu bauen. Offen: Ableitung der Token-ID.
+
+**Als Nächstes:** `BUILD.md` — Client-Bibliothek, ENS-Namensprüfung, Deploy auf Sepolia.
 
 ## Arbeitsregeln
 
