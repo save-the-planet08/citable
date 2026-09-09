@@ -130,9 +130,57 @@ Damit ist nachträgliche Manipulation ausgeschlossen: Niemand kann Vektoren so
 zurechtbiegen, dass ein Zitat besser passt. Die Vektoren werden einmal beim Registrieren
 berechnet und stehen fest.
 
-Zusätzlich wird die **Modellkennung** mitgespeichert (`multilingual-e5-small@v1`). Ohne
-sie ist ein Prozentwert nicht reproduzierbar — ein anderes Modell liefert eine andere
-Zahl. Die Kennung steht deshalb immer neben dem Wert.
+Zusätzlich wird die **Modellkennung** mitgespeichert. Ohne sie ist ein Prozentwert nicht
+reproduzierbar — ein anderes Modell liefert eine andere Zahl. Die Kennung steht deshalb
+immer neben dem Wert.
+
+### Ähnlichkeit allein reicht nicht — gemessen, nicht vermutet
+
+`script/js/similarity-probe.mjs` prüft, ob Bedeutungsnähe ein verzerrtes Zitat von einer
+korrekten Übersetzung trennen kann. **Sie kann es nicht:**
+
+| Eingabe gegen "Wurden die Zahlen manipuliert? Diese Frage stellt sich seit Monaten." | Ähnlichkeit |
+|---|---|
+| Übersetzung: "Were the figures manipulated? …" | 0,877 |
+| Umformulierung | 0,888 |
+| **Falschzitat: "Roth hat zugegeben, dass die Zahlen manipuliert wurden."** | **0,880** |
+| unverwandter Satz | 0,810 |
+
+Das Falschzitat liegt **über** der korrekten Übersetzung. Der Grund: Ähnlichkeitsmodelle
+messen, *worüber* geredet wird, nicht *was behauptet* wird. Frage und Behauptung sehen für
+sie gleich aus. Eine Prozentzahl auf dieser Grundlage würde in genau dem Fall, für den das
+Projekt gebaut ist, die Desinformation bestätigen.
+
+### Die Lösung: erst suchen, dann prüfen
+
+`script/js/nli-probe.mjs` misst dieselben Fälle mit einem NLI-Modell — einem Modell, das
+nicht nach Themennähe fragt, sondern: **"Ist diese Behauptung durch den Text gedeckt?"**
+
+| Eingabe | entailment |
+|---|---|
+| identisch | 0,9595 |
+| Übersetzung | **0,9825** |
+| Umformulierung | 0,9310 |
+| **Falschzitat** | **0,5982** |
+| unverwandt | 0,3509 |
+
+Zwischen dem schwächsten gedeckten Fall und dem Falschzitat liegen 33 Punkte. Die
+Trennung ist eindeutig, und die Übersetzung bekommt den höchsten Wert von allen.
+
+Daraus folgt der zweistufige Aufbau — jeder Teil macht das, was er nachweislich kann:
+
+```
+87 Absätze
+    │  Embeddings (multilingual-e5-small) — schnell, wählt die 3 besten Kandidaten
+    ▼
+3 Kandidaten
+    │  NLI (mDeBERTa-v3-base-xnli) — langsamer, aber nur noch 3 Vergleiche
+    ▼
+"Absatz 3 — zu 91 % durch den Text gedeckt"
+```
+
+Die angezeigte Prozentzahl ist damit der entailment-Wert und misst das Richtige: nicht
+"gleiches Thema", sondern "vom Text gedeckt".
 
 ---
 
@@ -169,12 +217,15 @@ Fragment eingeben
 └──────────────────────────┬───────────────────────────────────┘
                            │ kein Treffer
                            ▼
-┌─ Stufe 3: Bedeutung ─────────────────────────────────────────┐
-│  Vektor bilden, gegen alle Absatzvektoren vergleichen        │
+┌─ Stufe 3: Deckung ───────────────────────────────────────────┐
+│  a) Embeddings → die 3 thematisch nächsten Absätze           │
+│  b) NLI auf diese 3 → ist die Behauptung gedeckt?            │
 │  Bester Wert → 📊 KEIN BEWEIS, MESSUNG                       │
-│     "Nicht wortgleich enthalten.                             │
-│      Nächster Absatz: Nr. 3 — 87 % Bedeutungsnähe            │
-│      (multilingual-e5-small). Das ist keine Bestätigung."    │
+│     gedeckt:      "Absatz 3 — zu 93 % durch den Text         │
+│                    gedeckt (mDeBERTa-xnli)."                 │
+│     nicht gedeckt: "Absatz 3 behandelt dasselbe Thema,       │
+│                    deckt die Behauptung aber nicht (60 %)."  │
+│      + Absatz 3 immer im Volltext daneben                    │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -217,8 +268,8 @@ Keine Datenbank. Kein Server. Kein Indexer.
 **Kann nicht:**
 - Bedeutung *beweisen*. Stufe 3 ist eine Modellaussage, kein Beweis, und kann falsch liegen
 - Etwas über nicht registrierte Texte sagen. Nicht registriert heißt nur: nicht registriert
-- Ironie, Zitat-im-Zitat oder Konjunktiv verstehen. "Er behauptete, X" und "X" liegen
-  semantisch nah beieinander und bedeuten das Gegenteil ← **die gefährlichste Schwäche**
+- Ironie und Zitat-im-Zitat verstehen. Der Frage-gegen-Behauptung-Fall ist durch die
+  NLI-Stufe abgedeckt (0,60 gegen 0,93), Ironie bleibt offen
 - Beweisen, dass jemand etwas **nie** gesagt hat
 - Das Kaltstart-Problem lösen
 
@@ -226,19 +277,19 @@ Keine Datenbank. Kein Server. Kein Indexer.
 
 ## 7. Offene Entscheidungen
 
-1. **Modell** — `multilingual-e5-small` (klein, schnell), `LaBSE` (109 Sprachen, groß) oder
-   `paraphrase-multilingual-MiniLM`?
-2. **Wo läuft es** — im Browser (Transformers.js, 25–90 MB Download beim ersten Besuch,
-   dafür kein Server) oder über eine API (schnell, aber Schlüssel und Betriebskosten)?
-3. **Schwelle** — ab wie viel Prozent wird überhaupt etwas angezeigt? Unter 50 % ist die
-   Zahl Rauschen und suggeriert Präzision, die nicht da ist
+1. ~~Modell~~ — entschieden: `multilingual-e5-small` zum Suchen,
+   `mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` zum Prüfen. Beide gemessen.
+2. **Wo läuft es** — im Browser (Transformers.js, kein Server, aber beim ersten Besuch
+   lädt vor allem das NLI-Modell spürbar) oder serverseitig?
+3. **Schwelle** — ab welchem entailment-Wert gilt eine Behauptung als gedeckt? Die
+   Messung legt eine Grenze um 0,85 nahe, das braucht mehr als fünf Testfälle
 4. **Reichweite der Frage** — nur gegen eine Aussage prüfen, oder gegen alle Aussagen eines
    Autors? Letzteres beantwortet "Hat Person X das gesagt?" mit sichtbarem Nenner:
-   *"In keiner der 47 registrierten Aussagen. Höchste Nähe: 62 %."*
-5. **Konjunktiv-Problem** — akzeptieren und im Interface benennen, oder gibt es eine
-   Gegenmaßnahme?
-6. **Hackathon-Umfang** — Abgabe ist in sieben Tagen. Was von Schicht 2 wird bis dahin
-   echt, was bleibt Konzept?
+   *"In keiner der 47 registrierten Aussagen gedeckt. Höchster Wert: 62 %."*
+5. **Geschwindigkeit** — wie viele Kandidaten gehen ins NLI? Drei ist geraten, nicht
+   gemessen
+6. **Hackathon-Umfang** — Abgabe ist in sieben Tagen. Beide Modelle im Browser plus
+   Register- und Verify-Screen ist eng; ENS wird dadurch wahrscheinlich Weg B
 
 ---
 
