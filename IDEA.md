@@ -1,5 +1,11 @@
 # Citable — Projekt-Manifest
 
+> **Überholt seit 09.09.2026.** Dieses Dokument ist der erste Entwurf und beschreibt nur
+> die Merkle-Schicht. Die semantische Stufe 3 — der eigentliche Kern des Projekts — fehlt
+> hier vollständig, und Abschnitt 5 (Verify-Screen), 7 (Bounties) und 8 (Tagesplan) sind
+> nicht mehr aktuell. **Maßgeblich ist `CONCEPT.md`.** Behalten für Video-Skript (9),
+> README-Gerüst (10) und die Risikoliste (11).
+
 **Verifizierbares Publishing-Register mit Positionsbeweis**
 
 | | |

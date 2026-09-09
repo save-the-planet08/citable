@@ -2,8 +2,10 @@
 
 Verifizierbares Publishing-Register mit Positionsbeweis. ETHOnline 2026, Abgabe 16.09.2026.
 
-Vollständiges Manifest: `IDEA.md` — Architektur, Tagesplan, Video-Skript, Bounty-Zuordnung.
-Diese Datei ist der Einstieg pro Session, nicht die Spezifikation.
+**Maßgebliche Spezifikation: `CONCEPT.md`** — beide Schichten, mit den Messwerten, auf denen
+die Entscheidungen beruhen. `IDEA.md` ist der erste Entwurf und kennt Schicht 3 nicht; es
+gilt nur noch für Tagesplan, Video-Skript und Bounty-Zuordnung. Bei Widerspruch gewinnt
+CONCEPT.md. Diese Datei hier ist der Einstieg pro Session, nicht die Spezifikation.
 
 ## Der Kernsatz
 
@@ -12,6 +14,10 @@ Nicht "ist dieses Zitat echt?" — sondern **"hier ist der Beweis, dass ich rich
 Citable zerlegt eine Aussage in Absätze, bindet jeden an seine Position, legt nur die
 Merkle-Wurzel on-chain. Wer zitiert, liefert einen Beweis mit: Dieses Fragment stand
 wortgleich an Position *i* von *n*, hier sind die Nachbarn, hier das Datum.
+
+Findet sich kein wörtlicher Treffer, kommt Stufe 3: Übersetzungen und Umformulierungen
+werden über NLI erkannt und als Deckungsgrad beziffert — ausdrücklich als Messung, nicht
+als Beweis.
 
 ## Zwei Invarianten — nie ändern ohne Not
 
@@ -51,17 +57,14 @@ npm install && forge test    # braucht ffi = true (steht in foundry.toml)
 
 ## Stand
 
-Arbeitstag 1 (Di 08.09.) abgeschlossen: Foundry-Setup, OpenZeppelin v5.7.0, Blattformel
-auf beiden Seiten, 6 Paritätstests grün, gepusht nach
-`github.com/save-the-planet08/citable`.
+Arbeitstag 2 (Mi 09.09.). Erledigt: Foundry-Setup, OpenZeppelin v5.7.0, Blattformel mit
+bewiesener JS/Solidity-Parität, `CitableRegistry` mit Positionsbeweis (16 Tests grün),
+Schicht 3 gemessen und entschieden (NLI + Wertprüfung statt Ähnlichkeit).
 
-**Als Nächstes — Tag 2 (Mi 09.09.):**
-1. `src/CitableRegistry.sol` nach IDEA.md 4.2 (nutzt `Leaf.leafOf`)
-2. Die sechs Pflichttests aus IDEA.md 4.3 grün — besonders `test_RevertWhen_WrongIndex`,
-   der beweist, dass der Positionsbeweis wirklich trägt
-3. **ENS-Entscheidung A oder B** (IDEA.md 6) — Zeitschranke ist Ende Tag 2
-
-Offen: CI läuft ohne `npm install` und ist deshalb rot.
+**Als Nächstes:**
+1. Deploy auf Sepolia per `forge script`
+2. Client-Bibliothek: `segment()`, `buildTree()`, Bündelformat
+3. **ENS-Entscheidung A oder B** (IDEA.md 6) — überfällig, blockiert die Identitätsschicht
 
 ## Arbeitsregeln
 
@@ -69,31 +72,28 @@ Offen: CI läuft ohne `npm install` und ist deshalb rot.
 - **Mindestens ein aussagekräftiger Commit pro Arbeitstag.** ETHGlobal kann Einreichungen
   mit einem einzigen großen Commit disqualifizieren.
 - Conventional Commits, Englisch, Imperativ.
-- Der Tagesplan in IDEA.md 8 ist verbindlich. Liegt der Stand hinten, wird gestrichen —
-  nicht die Nacht durchgearbeitet.
+- Der Tagesplan in IDEA.md 8 ist überholt (er kennt Schicht 3 nicht), die Abgabe am
+  16.09. nicht. Liegt der Stand hinten, wird gestrichen — nicht die Nacht durchgearbeitet.
 
 ## Streichliste bei Zeitdruck
 
 In dieser Reihenfolge, ohne Rückfrage:
 
-1. The-Graph-Subgraph
+1. ~~The-Graph-Subgraph~~ — bereits gestrichen
 2. Author-Screen (Screen 3)
 3. IPFS-Pinning — Volltext notfalls ins Repo, CID-Feld leer
+4. Stufe 3 im Browser → notfalls nur als Skript im Video zeigen
 
-**Nicht streichbar:** Verify-Screen, die sechs Registry-Tests, das Video.
+**Nicht streichbar:** Verify-Screen mit Stufe 1 und 2, die Registry-Tests, das Video.
 
 ## Was bewusst nicht gebaut wird
 
-**Semantische Ähnlichkeit (v2, nicht in diesem Hackathon).** Wenn kein Merkle-Beweis
-gefunden wird, wäre eine Embedding-Ähnlichkeit als Sinn-Schicht denkbar — Prozentwert,
-klar als Heuristik gekennzeichnet, Entscheidung beim Nutzer. Konzeptionell richtig, aber:
-Ein Embedding-Wert ist modellabhängig und damit nicht unabhängig nachrechenbar. Falls das
-je gebaut wird, muss das Modell neben der Zahl stehen (`all-MiniLM-L6-v2 · 78 %`), sonst
-ist sie eine erfundene Zahl mit Beweis-Anmutung.
-
-In v1 ist der dritte Zustand des Verify-Screens ein **Teilstring**-Vergleich:
-"Kommt vor, aber nicht als vollständiges Segment." Deterministisch und laut IDEA.md 9 die
-stärkste Sekunde im Video.
+**Reine Ähnlichkeitsmessung als Deckungsmaß.** Gemessen und verworfen: Embeddings bewerten
+ein Falschzitat (0,880) höher als eine korrekte Übersetzung (0,877), weil sie Thema statt
+Aussage messen. Stufe 3 nutzt deshalb NLI (entailment) plus eine deterministische
+Wertprüfung — siehe CONCEPT.md und `script/js/entailment-eval.mjs`. Die angezeigte
+Prozentzahl bedeutet "kein Falschzitat aus dem Testsatz erreichte diesen Wert", nicht
+"zu X % wahr".
 
 **Wahrscheinlichkeit, dass Person X etwas je gesagt hat.** Nicht baubar — der Nenner
 (welcher Anteil aller Äußerungen liegt vor?) ist unbekannt, jede Prozentzahl geraten.
@@ -108,8 +108,13 @@ gebaut. Es soll keinen Dienst geben, dem man vertrauen muss.
 
 ## Grenzen — gehören ins Video und ins README
 
-- Keine Übersetzungen, keine Paraphrasen. Ein Hash kennt keine Bedeutung.
+- Stufe 3 ist eine Messung, kein Beweis, und kann falsch liegen.
+- Spanisch ist schwach (0,562 gegen 0,821 für Englisch) und fällt bei Schwelle 0,80 durch.
+- 16 Testfälle sind ein Signal, keine Validierung.
+- Ironie und Zitat-im-Zitat werden nicht erkannt. Frage-gegen-Aussage schon.
 - Nicht registriert ≠ erfunden.
+- `ensNode` ist im Contract ungeprüft, bis die ENS-Schicht steht.
+- Wer denselben Text zuerst registriert, gewinnt — Front-Running ist dokumentiert, nicht gelöst.
 - Absatzgranularität, nicht Satzgranularität.
 - Das Kaltstart-Problem bleibt ungelöst.
 
