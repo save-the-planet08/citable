@@ -167,20 +167,59 @@ nicht nach Themennähe fragt, sondern: **"Ist diese Behauptung durch den Text ge
 Zwischen dem schwächsten gedeckten Fall und dem Falschzitat liegen 33 Punkte. Die
 Trennung ist eindeutig, und die Übersetzung bekommt den höchsten Wert von allen.
 
-Daraus folgt der zweistufige Aufbau — jeder Teil macht das, was er nachweislich kann:
+### Das Modell allein reicht nicht — auch das gemessen
+
+`script/js/entailment-eval.mjs` prüft 16 Fälle gegen alle Absätze: sieben echte Zitate
+(darunter zwei Übersetzungen, Paraphrase, Kürzung, Passiv) und neun Verzerrungsarten.
+Ergebnis ohne weitere Maßnahmen: Bei einer Schwelle von 0,75 kommt zwar kein Falschzitat
+durch, aber der Abstand zum stärksten beträgt **0,022** — `subjekt-getauscht`
+("Herr Roth" statt "Frau Roth") landet bei 0,7278. Das ist zu knapp.
+
+Die zwei Wackelkandidaten haben eines gemeinsam: Sie ändern einen **Wert**, keine
+Bedeutung — eine Zahl oder die handelnde Person. Genau dafür braucht es kein Modell.
+
+### Die Wertprüfung (`script/js/guards.mjs`)
+
+Vor dem Modell läuft ein deterministischer Abgleich. Aus Zitat und Absatz werden alle
+wertbehafteten Angaben gezogen — Ziffern, ausgeschriebene Zahlen, Anreden — und auf ihren
+**Wert** normalisiert statt auf ihre Schreibweise: `four`, `vier` und `cuatro` werden zu
+`n:4`, `Herr` und `Mr` zu `t:m`. Ohne diese Normalisierung würde die Regel ausgerechnet
+Übersetzungen blockieren.
+
+Behauptet ein Zitat einen Wert, den der Absatz nie erwähnt, wird das Paar gar nicht erst
+bewertet — unabhängig davon, wie ähnlich es klingt. Die Regel ist von Hand nachprüfbar und
+braucht kein Modell.
+
+| | ohne Wertprüfung | mit Wertprüfung |
+|---|---|---|
+| stärkstes Falschzitat | 0,7278 (`subjekt-getauscht`) | **0,5655** (`negation-weg`) |
+| Abstand zur Schwelle 0,80 | 0,072 | **0,235** |
+| durchgelassene Falschzitate | 0/9 | 0/9 |
+| abgelehnte echte Zitate | 1/7 | 1/7 |
+
+### Der Aufbau
 
 ```
 87 Absätze
-    │  Embeddings (multilingual-e5-small) — schnell, wählt die 3 besten Kandidaten
+    │  Embeddings (multilingual-e5-small) — schnell, wählt die Kandidaten
     ▼
-3 Kandidaten
-    │  NLI (mDeBERTa-v3-base-xnli) — langsamer, aber nur noch 3 Vergleiche
+Kandidaten
+    │  Wertprüfung — Zahlen und Anreden müssen gedeckt sein, sonst raus
     ▼
-"Absatz 3 — zu 91 % durch den Text gedeckt"
+    │  NLI (mDeBERTa-v3-base-xnli) — ist die Behauptung durch den Text gedeckt?
+    ▼
+"Absatz 3 — zu 83 % durch den Text gedeckt"     ab Schwelle 0,80
+"Absatz 3 behandelt das Thema, deckt die Behauptung aber nicht (57 %)"
 ```
 
-Die angezeigte Prozentzahl ist damit der entailment-Wert und misst das Richtige: nicht
-"gleiches Thema", sondern "vom Text gedeckt".
+Die angezeigte Prozentzahl ist der entailment-Wert und misst das Richtige: nicht "gleiches
+Thema", sondern "vom Text gedeckt". Sie bedeutet ausdrücklich **nicht** "zu 83 % wahr",
+sondern: kein Falschzitat aus dem Testsatz hat diesen Wert erreicht.
+
+**Was offen bleibt:** Spanisch ist schwach (0,562 gegenüber 0,821 für Englisch) und würde
+bei Schwelle 0,80 abgelehnt — ein falsch-negativer Fall, der ärgerlich, aber nicht
+gefährlich ist. Und 16 Fälle sind ein Signal, keine Validierung; für echtes Vertrauen
+bräuchte es 50 bis 100.
 
 ---
 
