@@ -22,7 +22,7 @@ const { root, proofFor } = buildTree(segments);
 
 process.stdout.write(
   encodeAbiParameters(
-    [{ type: "bytes32" }, { type: "uint256" }, { type: "bytes32[]" }],
+    [{ type: "bytes32" }, { type: "uint32" }, { type: "bytes32[]" }],
     [root, BigInt(segments.length), proofFor(Number(rawIndex))],
   ),
 );

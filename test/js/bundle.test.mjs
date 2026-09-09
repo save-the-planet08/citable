@@ -76,6 +76,19 @@ test("a dropped segment breaks the anchor", () => {
   assert.equal(verifyBundle(bundle, rootOf(TEXT)), false);
 });
 
+test("an added segment breaks the anchor — n is proven, not claimed", () => {
+  const bundle = buildBundle(TEXT);
+  bundle.segments.push({ index: 4, text: "Nachträglich eingeschoben." });
+  assert.equal(verifyBundle(bundle, rootOf(TEXT)), false);
+});
+
+test("the vectors are not covered by the root — only the CID holds them", () => {
+  const vectors = segment(TEXT).map(() => [1, 2, 3]);
+  const bundle = buildBundle(TEXT, vectors, "multilingual-e5-small");
+  bundle.segments[0].vector = [9, 9, 9];
+  assert.ok(verifyBundle(bundle, rootOf(TEXT)));
+});
+
 test("rejects a duplicate index", () => {
   const bundle = buildBundle(TEXT);
   bundle.segments[1].index = 0;

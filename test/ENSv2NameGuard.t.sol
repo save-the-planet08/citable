@@ -59,9 +59,15 @@ contract ENSv2NameGuardTest is Test {
         assertEq(guard.PUBLISH_ROLE(), ROLE_SET_RESOLVER);
     }
 
-    function test_RevertWhen_ZeroRegistry() public {
-        vm.expectRevert(ENSv2NameGuard.ZeroRegistry.selector);
+    /// @notice Eine Registry ohne Code ließe jedes `registerRoot` reverten, und die
+    ///         Adresse ist unveränderlich — der Vertipper wäre nur durch einen neuen
+    ///         Guard heilbar.
+    function test_RevertWhen_RegistryHasNoCode() public {
+        vm.expectRevert(ENSv2NameGuard.RegistryWithoutCode.selector);
         new ENSv2NameGuard(IENSv2Registry(address(0)), ROLE_SET_RESOLVER);
+
+        vm.expectRevert(ENSv2NameGuard.RegistryWithoutCode.selector);
+        new ENSv2NameGuard(IENSv2Registry(stranger), ROLE_SET_RESOLVER);
     }
 
     function test_RevertWhen_ZeroRole() public {

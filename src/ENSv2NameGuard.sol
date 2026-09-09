@@ -41,11 +41,14 @@ contract ENSv2NameGuard is INameGuard {
     ///      anderer Rollenvergabe denselben Guard nutzen kann.
     uint256 public immutable PUBLISH_ROLE;
 
-    error ZeroRegistry();
+    error RegistryWithoutCode();
     error ZeroRole();
 
+    /// @dev Die Registry-Adresse ist unveränderlich. Zeigt sie ins Leere, revertet jedes
+    ///      `mayPublish` und damit jedes `registerRoot` — und heilbar wäre das nur durch
+    ///      einen neuen Guard. Ein Vertipper darf hier nicht durchkommen.
     constructor(IENSv2Registry registry, uint256 publishRole) {
-        if (address(registry) == address(0)) revert ZeroRegistry();
+        if (address(registry).code.length == 0) revert RegistryWithoutCode();
         if (publishRole == 0) revert ZeroRole();
         REGISTRY = registry;
         PUBLISH_ROLE = publishRole;

@@ -97,14 +97,15 @@ Honest state of the repository, not a plan.
 | | |
 |---|---|
 | Leaf hashing, JS ↔ Solidity parity proven | ✅ 6 tests |
-| `CitableRegistry` with position proofs | ✅ 10 tests |
-| Client library (segment, tree, bundle) | ✅ 41 JS tests |
+| `CitableRegistry` with position proofs | ✅ 13 tests |
+| Client library (segment, tree, bundle) | ✅ 43 JS tests |
 | JS-built proofs accepted by the contract | ✅ 4 tests |
 | ENSv2 token id derivation resolved | ✅ `script/js/ens-probe.mjs` |
-| `INameGuard` gate on `registerRoot` | ✅ 9 tests |
+| `INameGuard` gate on `registerRoot` | ✅ 12 tests |
 | `ENSv2NameGuard` incl. Sepolia fork test | ✅ 15 + 5 tests |
 | Layer 3 approach measured and chosen | ✅ 3 probe scripts |
-| Deployment to Sepolia | ❌ script ready, not broadcast |
+| Deploy path proven on a Sepolia fork | ✅ broadcast + smoke test |
+| Deployment to Sepolia proper | ❌ needs a funded key |
 | Frontend | ❌ not yet |
 
 ## Run it
@@ -112,8 +113,8 @@ Honest state of the repository, not a plan.
 ```bash
 forge install
 npm install          # required: the parity tests shell out to the JS implementation
-forge test           # 44 tests; 5 more when SEPOLIA_RPC_URL is set
-npm test             # 41 client library tests
+forge test           # 50 tests; 5 more when SEPOLIA_RPC_URL is set
+npm test             # 43 client library tests
 
 cp .env.example .env # SEPOLIA_RPC_URL enables the ENSv2 fork test
 node script/js/ens-probe.mjs          # ENSv2 reachability and token id derivation
@@ -155,6 +156,13 @@ It deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
   registered keep their recorded `ensNode`; the guard only governs new ones.
 - **First registration wins.** Identical text yields an identical root, so someone can
   register another author's text first. Documented, not yet fixed.
+- **`segmentCount` on chain is a claim, not a proof.** A root does not reveal how many
+  leaves it has, so the contract cannot check the number. It is only the range check in
+  `verifySegment`. The honest *n* comes from the IPFS bundle: a bundle that matches the
+  root cannot have a paragraph added, dropped or moved, so its length is proven. The
+  interface must read "paragraph i of n" from the bundle, never from the chain.
+- **The root does not cover the vectors.** It commits to index and text. The vectors are
+  bound to the bundle by its CID, and the CID is on chain — but see the next point.
 - **The contract cannot check that the CID matches the root.** It never sees the text. A
   mismatch makes the statement unverifiable, so lying only hurts the author.
 - Paragraph granularity, not sentence granularity.
@@ -165,6 +173,14 @@ It deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
 C2PA / Content Credentials, Soft Binding Resolution, Numbers Protocol, Chainpoint.
 Citable differs in two ways: the position proof *within* a statement, and the honest
 fallback when no proof exists.
+
+## Dependencies
+
+The client library and every test depend on `viem` and `merkletreejs` only, and
+`npm audit --omit=dev` reports nothing. `@xenova/transformers` is a dev dependency: it
+runs the layer-3 measurement scripts and ships nothing. It carries known advisories
+through `onnxruntime-web` and `sharp`; the fix is a downgrade that would change the
+numbers recorded in `CONCEPT.md`, so it stays pinned and out of the runtime path.
 
 ## AI usage
 

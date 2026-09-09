@@ -5,6 +5,15 @@ import {Test} from "forge-std/Test.sol";
 import {CitableRegistry} from "../src/CitableRegistry.sol";
 import {INameGuard} from "../src/INameGuard.sol";
 
+/// @dev Guard, der immer revertet. Ein kaputter Guard darf keine Aussage durchlassen.
+contract RevertingGuard is INameGuard {
+    error Broken();
+
+    function mayPublish(bytes32, address) external pure returns (bool) {
+        revert Broken();
+    }
+}
+
 /// @dev Guard mit fest eingetragener Berechtigung. Prüft die Verdrahtung in der
 ///      Registry, nicht ENS — das leistet der Fork-Test.
 contract AllowListGuard is INameGuard {
@@ -118,5 +127,33 @@ contract NameGuardTest is Test {
         vm.prank(author);
         vm.expectRevert(CitableRegistry.EmptyStatement.selector);
         registry.registerRoot(root, ensNode, CID, 0);
+    }
+
+    /// @notice Ein Guard ohne Code würde jedes `registerRoot` reverten lassen. Der
+    ///         Vertipper wird beim Setzen abgefangen, nicht erst beim ersten Autor.
+    function test_RevertWhen_GuardHasNoCode() public {
+        vm.prank(deployer);
+        vm.expectRevert(CitableRegistry.GuardWithoutCode.selector);
+        registry.setNameGuard(INameGuard(stranger));
+    }
+
+    /// @notice Abschalten bleibt möglich — `address(0)` ist keine fehlende
+    ///         Guard-Adresse, sondern die ausdrückliche Wahl "keine Prüfung".
+    function test_ZeroAddressIsAllowed() public {
+        vm.prank(deployer);
+        registry.setNameGuard(INameGuard(address(0)));
+        assertEq(address(registry.nameGuard()), address(0));
+    }
+
+    /// @notice Revertet der Guard, revertet die Registrierung — nichts wird
+    ///         stillschweigend durchgelassen.
+    function test_RevertWhen_GuardReverts() public {
+        RevertingGuard broken = new RevertingGuard();
+        vm.prank(deployer);
+        registry.setNameGuard(broken);
+
+        vm.prank(author);
+        vm.expectRevert(RevertingGuard.Broken.selector);
+        registry.registerRoot(root, ensNode, CID, 4);
     }
 }

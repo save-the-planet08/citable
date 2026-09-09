@@ -82,6 +82,14 @@ contract CitableRegistryTest is Test {
         registry.registerRoot(root, ensNode, CID, 0);
     }
 
+    /// @notice Die Nullwurzel ist kein gültiger Eintrag — sonst stünde ein Platzhalter
+    ///         im Register, den niemand belegen kann.
+    function test_RevertWhen_EmptyRoot() public {
+        vm.prank(author);
+        vm.expectRevert(CitableRegistry.EmptyRoot.selector);
+        registry.registerRoot(bytes32(0), ensNode, CID, 4);
+    }
+
     function test_RevertWhen_NotAuthor() public {
         _register();
         vm.prank(stranger);
@@ -122,6 +130,29 @@ contract CitableRegistryTest is Test {
         registry.withdrawStatement(root);
 
         assertTrue(registry.getStatement(root).withdrawn);
+        assertTrue(registry.verifySegment(root, 1, segments[1], proofForOne));
+    }
+
+    /// @notice Zweimal zurückziehen ist kein Zustandswechsel — sonst stünden doppelte
+    ///         Ereignisse im Verlauf.
+    function test_RevertWhen_WithdrawnTwice() public {
+        _register();
+        vm.startPrank(author);
+        registry.withdrawStatement(root);
+        vm.expectRevert(CitableRegistry.AlreadyWithdrawn.selector);
+        registry.withdrawStatement(root);
+        vm.stopPrank();
+    }
+
+    /// @notice `segmentCount` ist eine Behauptung des Autors, keine bewiesene Zahl: aus
+    ///         der Wurzel lässt sich die Blattzahl nicht zurückrechnen. Die Registry
+    ///         nimmt hier eine falsche Zahl an — bewiesen wird *n* erst durch das
+    ///         Bündel gegen die Wurzel. Der Test hält das Verhalten fest, damit es
+    ///         niemand für eine Prüfung hält.
+    function test_SegmentCountIsUnverified() public {
+        vm.prank(author);
+        registry.registerRoot(root, ensNode, CID, type(uint32).max);
+        assertEq(registry.getStatement(root).segmentCount, type(uint32).max);
         assertTrue(registry.verifySegment(root, 1, segments[1], proofForOne));
     }
 

@@ -37,29 +37,29 @@ contract ProofBridgeTest is Test {
     }
 
     /// @dev Ruft die Client-Bibliothek auf und liefert, was ein Frontend liefern würde.
-    function _clientProof(uint256 index) internal returns (bytes32 root, uint256 segmentCount, bytes32[] memory proof) {
+    function _clientProof(uint256 index) internal returns (bytes32 root, uint32 segmentCount, bytes32[] memory proof) {
         string[] memory cmd = new string[](4);
         cmd[0] = "node";
         cmd[1] = "script/js/tree.mjs";
         cmd[2] = vm.toString(index);
         cmd[3] = TEXT;
-        return abi.decode(vm.ffi(cmd), (bytes32, uint256, bytes32[]));
+        return abi.decode(vm.ffi(cmd), (bytes32, uint32, bytes32[]));
     }
 
     /// @notice Der Kern: Der Client segmentiert genauso wie hier erwartet.
     function test_ClientSegmentsTheSameWay() public {
-        (, uint256 segmentCount,) = _clientProof(0);
+        (, uint32 segmentCount,) = _clientProof(0);
         assertEq(segmentCount, segments.length);
     }
 
     /// @notice Jeder Beweis aus dem Client wird vom Contract akzeptiert.
     function test_ClientProofsVerifyOnChain() public {
         for (uint256 i = 0; i < segments.length; i++) {
-            (bytes32 root, uint256 segmentCount, bytes32[] memory proof) = _clientProof(i);
+            (bytes32 root, uint32 segmentCount, bytes32[] memory proof) = _clientProof(i);
 
             if (i == 0) {
                 vm.prank(author);
-                registry.registerRoot(root, ensNode, CID, uint32(segmentCount));
+                registry.registerRoot(root, ensNode, CID, segmentCount);
             }
 
             assertTrue(registry.verifySegment(root, i, segments[i], proof), "client proof rejected");
@@ -68,20 +68,20 @@ contract ProofBridgeTest is Test {
 
     /// @notice Positionsbeweis, nicht bloß Mitgliedschaft: derselbe Absatz, falscher Index.
     function test_ClientProofFailsAtWrongIndex() public {
-        (bytes32 root, uint256 segmentCount, bytes32[] memory proof) = _clientProof(1);
+        (bytes32 root, uint32 segmentCount, bytes32[] memory proof) = _clientProof(1);
 
         vm.prank(author);
-        registry.registerRoot(root, ensNode, CID, uint32(segmentCount));
+        registry.registerRoot(root, ensNode, CID, segmentCount);
 
         assertFalse(registry.verifySegment(root, 2, segments[1], proof));
     }
 
     /// @notice Ein geändertes Zeichen fällt durch.
     function test_ClientProofFailsForAlteredSegment() public {
-        (bytes32 root, uint256 segmentCount, bytes32[] memory proof) = _clientProof(2);
+        (bytes32 root, uint32 segmentCount, bytes32[] memory proof) = _clientProof(2);
 
         vm.prank(author);
-        registry.registerRoot(root, ensNode, CID, uint32(segmentCount));
+        registry.registerRoot(root, ensNode, CID, segmentCount);
 
         assertFalse(
             registry.verifySegment(root, 2, unicode"Im vergangenen Quartal stieg der Umsatz um vierzig Prozent.", proof)

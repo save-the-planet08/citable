@@ -44,7 +44,10 @@ contract CitableRegistry {
     event NameGuardChanged(address indexed guard);
 
     error AlreadyRegistered();
+    error AlreadyWithdrawn();
     error EmptyStatement();
+    error EmptyRoot();
+    error GuardWithoutCode();
     error NotAuthor();
     error NotAuthorized();
     error NotOwner();
@@ -61,7 +64,14 @@ contract CitableRegistry {
     /// @notice Trägt eine Aussage ein.
     /// @dev Ist kein Guard gesetzt, darf jeder jeden Namen behaupten — `ensNode` ist dann
     ///      unbelegte Metadatenangabe. Mit Guard revertet der Aufruf mit `NotAuthorized`.
+    ///
+    ///      `segmentCount` ist eine Angabe des Autors und wird NICHT gegen den Baum
+    ///      geprüft — aus einer Wurzel lässt sich die Blattzahl nicht zurückrechnen. Sie
+    ///      dient nur der Bereichsprüfung in `verifySegment`. Die belastbare Zahl steht im
+    ///      IPFS-Bündel: Wer es gegen die Wurzel prüft (`verifyBundle`), hat *n* bewiesen.
+    ///      Das Frontend zeigt darum "Absatz i von n" aus dem Bündel, nie aus diesem Feld.
     function registerRoot(bytes32 root, bytes32 ensNode, string calldata cid, uint32 segmentCount) external {
+        if (root == bytes32(0)) revert EmptyRoot();
         if (statements[root].timestamp != 0) revert AlreadyRegistered();
         if (segmentCount == 0) revert EmptyStatement();
 
@@ -88,8 +98,13 @@ contract CitableRegistry {
     /// @notice Setzt oder entfernt die Namensprüfung.
     /// @dev Getrennt vom Konstruktor, weil der Guard die Registry-Adresse noch nicht
     ///      kennen kann, wenn die Registry gerade erst entsteht.
+    ///
+    ///      Eine Adresse ohne Code würde jedes `registerRoot` reverten lassen — der
+    ///      Aufruf an `mayPublish` scheitert dann an der Codeprüfung des Compilers. Ein
+    ///      Vertipper legt also die ganze Registry lahm, deshalb hier abgefangen.
     function setNameGuard(INameGuard guard) external {
         if (msg.sender != owner) revert NotOwner();
+        if (address(guard) != address(0) && address(guard).code.length == 0) revert GuardWithoutCode();
         nameGuard = guard;
         emit NameGuardChanged(address(guard));
     }
@@ -101,6 +116,7 @@ contract CitableRegistry {
         Statement storage s = statements[root];
         if (s.timestamp == 0) revert UnknownStatement();
         if (s.author != msg.sender) revert NotAuthor();
+        if (s.withdrawn) revert AlreadyWithdrawn();
         s.withdrawn = true;
         emit StatementWithdrawn(root, uint64(block.timestamp));
     }

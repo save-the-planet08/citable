@@ -67,8 +67,8 @@ bewiesener JS/Solidity-Parität, `CitableRegistry` mit Positionsbeweis, Schicht 
 und entschieden (NLI + Wertprüfung statt Ähnlichkeit), Client-Bibliothek `lib/citable/`,
 und die ENS-Schicht.
 
-**Tests:** `forge test` 44 grün (49 mit `SEPOLIA_RPC_URL`, dann läuft der Fork-Test mit),
-`npm test` 41 grün.
+**Tests:** `forge test` 50 grün (55 mit `SEPOLIA_RPC_URL`, dann läuft der Fork-Test mit),
+`npm test` 43 grün, `forge fmt --check` und `forge build` ohne Warnung.
 
 **ENS-Entscheidung Weg A ist umgesetzt.** Die offene Frage aus BUILD.md 2a ist geklärt:
 Die unteren 32 Bit einer ENSv2-Token-ID tragen `tokenVersionId` aus dem Registry-Speicher
@@ -88,9 +88,21 @@ sonst dürfte der Registrar der ROOT_RESOURCE unter jedem fremden Namen veröffe
 `ensNode` heißt ab jetzt: die ENSv2-Kennung eines Namens, also `labelhash(label)` — nicht
 der ENSv1-Namehash. Aus einem Namehash ließe sich das Label nicht zurückgewinnen.
 
-**Als Nächstes:** Deploy auf Sepolia. `script/Deploy.s.sol` steht und läuft im Probelauf
-sauber gegen die echte Kette (~0,0053 ETH); der Broadcast braucht einen finanzierten
-Schlüssel in `.env`. Danach Frontend (Verify-Screen zuerst).
+**Der Deploy-Pfad ist bewiesen, nicht bloß geschrieben.** Gegen einen lokalen Anvil-Fork
+von Sepolia wurde wirklich gebroadcastet: beide Contracts deployt, Guard verdrahtet,
+`deployments/11155111.json` geschrieben. Danach der Rauchtest mit echtem ENS-Zustand — ein
+realer Namensinhaber registriert, der Beweis aus `lib/citable/` wird von `verifySegment`
+angenommen, an falscher Position abgelehnt, ein Fremder scheitert an `NotAuthorized`. Die
+Artefakte des Forks sind wieder entfernt.
+
+**Als Nächstes:** Broadcast auf das echte Sepolia (~0,0053–0,009 ETH, braucht einen
+finanzierten Schlüssel in `.env`), danach Adressen in README und hier eintragen. Dann
+Frontend, Verify-Screen zuerst.
+
+**Nicht vergessen — `segmentCount` ist keine bewiesene Zahl.** Aus einer Wurzel lässt sich
+die Blattzahl nicht zurückrechnen. Das Feld dient nur der Bereichsprüfung. Das *n* in
+"Absatz i von n" kommt aus dem Bündel, das `verifyBundle` gegen die Wurzel hält — dort ist
+es bewiesen.
 
 ## Arbeitsregeln
 
