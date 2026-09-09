@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {INameGuard} from "./INameGuard.sol";
 import {Leaf} from "./Leaf.sol";
 
 /// @title CitableRegistry
@@ -23,26 +24,49 @@ contract CitableRegistry {
 
     uint256 public statementCount;
 
+    /// @notice Prüft die Namensberechtigung beim Registrieren.
+    /// @dev `address(0)` heißt: keine Prüfung. Das ist das Verhalten vor der ENS-Schicht
+    ///      und bleibt der Ausgangszustand nach dem Deploy, bis der Guard gesetzt wird.
+    INameGuard public nameGuard;
+
+    /// @notice Darf den Guard setzen. Kein Transfer, kein Renounce — bewusst klein.
+    /// @dev Bekannte Zentralisierung: Wer das ist, kann die Namensprüfung abschalten.
+    ///      Bereits eingetragene Aussagen ändert das nicht, und Beweise bleiben gültig —
+    ///      der Guard entscheidet nur, wer künftig einen Namen behaupten darf.
+    address public immutable owner;
+
     event StatementRegistered(
         bytes32 indexed root, address indexed author, bytes32 indexed ensNode, uint32 segmentCount, string cid
     );
 
     event StatementWithdrawn(bytes32 indexed root, uint64 at);
 
+    event NameGuardChanged(address indexed guard);
+
     error AlreadyRegistered();
     error EmptyStatement();
     error NotAuthor();
+    error NotAuthorized();
+    error NotOwner();
     error UnknownStatement();
+
+    constructor() {
+        owner = msg.sender;
+    }
 
     // ---------------------------------------------------------------
     // Schreiben
     // ---------------------------------------------------------------
 
-    /// @notice Trägt eine Aussage ein. Jeder darf registrieren.
-    /// @dev `ensNode` wird NICHT geprüft — das leistet erst die ENS-Schicht.
+    /// @notice Trägt eine Aussage ein.
+    /// @dev Ist kein Guard gesetzt, darf jeder jeden Namen behaupten — `ensNode` ist dann
+    ///      unbelegte Metadatenangabe. Mit Guard revertet der Aufruf mit `NotAuthorized`.
     function registerRoot(bytes32 root, bytes32 ensNode, string calldata cid, uint32 segmentCount) external {
         if (statements[root].timestamp != 0) revert AlreadyRegistered();
         if (segmentCount == 0) revert EmptyStatement();
+
+        INameGuard guard = nameGuard;
+        if (address(guard) != address(0) && !guard.mayPublish(ensNode, msg.sender)) revert NotAuthorized();
 
         statements[root] = Statement({
             author: msg.sender,
@@ -59,6 +83,15 @@ contract CitableRegistry {
         }
 
         emit StatementRegistered(root, msg.sender, ensNode, segmentCount, cid);
+    }
+
+    /// @notice Setzt oder entfernt die Namensprüfung.
+    /// @dev Getrennt vom Konstruktor, weil der Guard die Registry-Adresse noch nicht
+    ///      kennen kann, wenn die Registry gerade erst entsteht.
+    function setNameGuard(INameGuard guard) external {
+        if (msg.sender != owner) revert NotOwner();
+        nameGuard = guard;
+        emit NameGuardChanged(address(guard));
     }
 
     /// @notice Der Autor kann eine Aussage als zurückgezogen markieren.
