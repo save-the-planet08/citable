@@ -1,14 +1,7 @@
-// Leaf hashing, JS side. Must stay byte-identical to src/Leaf.sol.
+// FFI entry point for test/Leaf.t.sol. The formula itself lives in lib/citable/leaf.mjs —
+// a second copy here would be a second thing to keep in sync.
 // Usage: node script/js/leaf.mjs <index> <segment>
-import { encodeAbiParameters, keccak256 } from "viem";
-
-export function leafOf(index, segment) {
-  const encoded = encodeAbiParameters(
-    [{ type: "uint256" }, { type: "string" }],
-    [BigInt(index), segment],
-  );
-  return keccak256(keccak256(encoded));
-}
+import { leafOf } from "../../lib/citable/leaf.mjs";
 
 const [index, segment] = process.argv.slice(2);
 if (index === undefined || segment === undefined) {
