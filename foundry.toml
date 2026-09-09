@@ -5,13 +5,23 @@ libs = ["lib"]
 solc = "0.8.24"
 evm_version = "cancun"
 
-# Required by test/Leaf.t.sol, which shells out to script/js/leaf.mjs to prove that
-# the JS and Solidity leaf hashes are byte-identical. Nothing else uses FFI.
+# Required by test/Leaf.t.sol and test/ProofBridge.t.sol, which shell out to Node to
+# prove that the JS client and Solidity agree on the leaf hash and on whole proofs.
 ffi = true
+
+# Deploy.s.sol writes deployments/<chainid>.json when broadcasting.
+fs_permissions = [{ access = "read-write", path = "./deployments" }]
 
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "forge-std/=lib/forge-std/src/",
 ]
+
+# Both read from .env — see .env.example. The ENS fork test skips itself without a URL.
+[rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"
+
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}", chain = 11155111 }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

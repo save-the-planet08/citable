@@ -18,10 +18,10 @@ contract ProofBridgeTest is Test {
     /// @dev Fünf Absätze: ungerade Blattzahl, damit die Baumseite mitgeprüft wird.
     ///      Leerzeilen und Ränder sind absichtlich unsauber — die Segmentierungsregel
     ///      muss sie wegräumen, und zwar in JS genauso wie hier erwartet.
-    string constant TEXT = unicode"  Wurden die Zahlen manipuliert? Diese Frage stellt sich seit Monaten.\n"
-        unicode"\n" unicode"Der Vorstand weist die Vorwürfe zurück.\n" unicode"\n" unicode"\n"
-        unicode"Im vergangenen Quartal stieg der Umsatz um vier Prozent.\n" unicode"\n"
-        unicode"   \n" unicode"\n" unicode"Eine Prüfung ist für Oktober angekündigt.\n" unicode"\n"
+    string constant TEXT = unicode"  Wurden die Zahlen manipuliert? Diese Frage stellt sich seit Monaten.\n" unicode"\n"
+        unicode"Der Vorstand weist die Vorwürfe zurück.\n" unicode"\n" unicode"\n"
+        unicode"Im vergangenen Quartal stieg der Umsatz um vier Prozent.\n" unicode"\n" unicode"   \n" unicode"\n"
+        unicode"Eine Prüfung ist für Oktober angekündigt.\n" unicode"\n"
         unicode"Zitat ohne Kontext 🤡 bleibt Desinformation — ÄÖÜ ß, 你好.  ";
 
     string[5] segments = [
@@ -37,10 +37,7 @@ contract ProofBridgeTest is Test {
     }
 
     /// @dev Ruft die Client-Bibliothek auf und liefert, was ein Frontend liefern würde.
-    function _clientProof(uint256 index)
-        internal
-        returns (bytes32 root, uint256 segmentCount, bytes32[] memory proof)
-    {
+    function _clientProof(uint256 index) internal returns (bytes32 root, uint256 segmentCount, bytes32[] memory proof) {
         string[] memory cmd = new string[](4);
         cmd[0] = "node";
         cmd[1] = "script/js/tree.mjs";
@@ -51,7 +48,7 @@ contract ProofBridgeTest is Test {
 
     /// @notice Der Kern: Der Client segmentiert genauso wie hier erwartet.
     function test_ClientSegmentsTheSameWay() public {
-        (,uint256 segmentCount,) = _clientProof(0);
+        (, uint256 segmentCount,) = _clientProof(0);
         assertEq(segmentCount, segments.length);
     }
 
@@ -87,9 +84,7 @@ contract ProofBridgeTest is Test {
         registry.registerRoot(root, ensNode, CID, uint32(segmentCount));
 
         assertFalse(
-            registry.verifySegment(
-                root, 2, unicode"Im vergangenen Quartal stieg der Umsatz um vierzig Prozent.", proof
-            )
+            registry.verifySegment(root, 2, unicode"Im vergangenen Quartal stieg der Umsatz um vierzig Prozent.", proof)
         );
     }
 }

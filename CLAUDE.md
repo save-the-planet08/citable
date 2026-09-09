@@ -51,21 +51,46 @@ sonst driften beide Seiten unbemerkt auseinander.
 
 Wer die Blattformel anfasst, fasst **beide** Dateien an. `forge test` beweist es.
 
+Dasselbe gilt für den ganzen Beweis: `test/ProofBridge.t.sol` lässt `script/js/tree.mjs`
+segmentieren und den Baum bauen und legt das Ergebnis `verifySegment` vor. Segmentierung,
+Baumform und Paarsortierung müssen also ebenfalls übereinstimmen.
+
 ```bash
 npm install && forge test    # braucht ffi = true (steht in foundry.toml)
+npm test                     # Client-Bibliothek
 ```
 
 ## Stand
 
 Arbeitstag 2 (Mi 09.09.). Erledigt: Foundry-Setup, OpenZeppelin v5.7.0, Blattformel mit
-bewiesener JS/Solidity-Parität, `CitableRegistry` mit Positionsbeweis (16 Tests grün),
-Schicht 3 gemessen und entschieden (NLI + Wertprüfung statt Ähnlichkeit).
+bewiesener JS/Solidity-Parität, `CitableRegistry` mit Positionsbeweis, Schicht 3 gemessen
+und entschieden (NLI + Wertprüfung statt Ähnlichkeit), Client-Bibliothek `lib/citable/`,
+und die ENS-Schicht.
 
-**ENS-Entscheidung gefallen: Weg A** (echtes ENSv2 auf Sepolia). Die deployten Contracts
-sind erreichbar und die Interfaces antworten (`script/js/ens-probe.mjs`) — wir nutzen die
-ENSv2-Registry, statt eine eigene zu bauen. Offen: Ableitung der Token-ID.
+**Tests:** `forge test` 44 grün (49 mit `SEPOLIA_RPC_URL`, dann läuft der Fork-Test mit),
+`npm test` 41 grün.
 
-**Als Nächstes:** `BUILD.md` — Client-Bibliothek, ENS-Namensprüfung, Deploy auf Sepolia.
+**ENS-Entscheidung Weg A ist umgesetzt.** Die offene Frage aus BUILD.md 2a ist geklärt:
+Die unteren 32 Bit einer ENSv2-Token-ID tragen `tokenVersionId` aus dem Registry-Speicher
+(`LibLabel.withVersion(anyId, v) = anyId ^ uint32(anyId) ^ v`), deshalb liefert
+`ownerOf(labelhash)` für *jeden* Namen `0x0`. `"ens"` hat zusätzlich keinen Inhaber, weil
+es RESERVED ist. Bewiesen in `script/js/ens-probe.mjs` gegen Namen, die es selbst aus
+Mint-Ereignissen findet — darunter einer bei Version 9.
+
+Daraus folgt die Bauregel: **Der Guard rechnet nie eine Token-ID aus**, er fragt die
+Registry (`getOwner`, `roles`), die die Versionsbits selbst auflöst.
+
+`ENSv2NameGuard` prüft nicht bloß Besitz, sondern eine Publikationsrolle
+(`ROLE_SET_RESOLVER`, per Konstruktor gesetzt). Ein eigenes Rollen-Bit ginge nicht: ENSv2
+vergibt Admin-Rollen nur bei der Registrierung. Der Guard liest `roles` statt `hasRoles`,
+sonst dürfte der Registrar der ROOT_RESOURCE unter jedem fremden Namen veröffentlichen.
+
+`ensNode` heißt ab jetzt: die ENSv2-Kennung eines Namens, also `labelhash(label)` — nicht
+der ENSv1-Namehash. Aus einem Namehash ließe sich das Label nicht zurückgewinnen.
+
+**Als Nächstes:** Deploy auf Sepolia. `script/Deploy.s.sol` steht und läuft im Probelauf
+sauber gegen die echte Kette (~0,0053 ETH); der Broadcast braucht einen finanzierten
+Schlüssel in `.env`. Danach Frontend (Verify-Screen zuerst).
 
 ## Arbeitsregeln
 
@@ -114,7 +139,9 @@ gebaut. Es soll keinen Dienst geben, dem man vertrauen muss.
 - 16 Testfälle sind ein Signal, keine Validierung.
 - Ironie und Zitat-im-Zitat werden nicht erkannt. Frage-gegen-Aussage schon.
 - Nicht registriert ≠ erfunden.
-- `ensNode` ist im Contract ungeprüft, bis die ENS-Schicht steht.
+- Die Namensprüfung ist aus, solange `nameGuard` auf `address(0)` steht.
+- Der Besitzer der Registry kann den Guard wieder abschalten — bekannter zentraler Punkt.
+- Der Guard deckt eine Registry und nur Namen zweiter Ebene ab; Unternamen sind vertagt.
 - Wer denselben Text zuerst registriert, gewinnt — Front-Running ist dokumentiert, nicht gelöst.
 - Absatzgranularität, nicht Satzgranularität.
 - Das Kaltstart-Problem bleibt ungelöst.

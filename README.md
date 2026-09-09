@@ -66,6 +66,30 @@ A registry run by a company would introduce exactly the central authority this p
 exists to avoid. There is no database and no server: the verifier fetches the text, rebuilds
 the tree locally and produces the proof themselves.
 
+## Identity: who may claim a name
+
+`registerRoot` used to take an `ensNode` and never look at it — anyone could publish under
+anyone's name. The check now sits behind `INameGuard`, and `ENSv2NameGuard` implements it
+against the real ENSv2 registry on Sepolia.
+
+It is not a pure ownership check. The name holder may publish, and so may anyone the holder
+granted the publish role to. That is what a newsroom actually looks like: a volunteer
+publishes under the newspaper's name without owning it. Every `.eth` registration on
+Sepolia grants its holder `ROLE_SET_RESOLVER` together with the admin bit for it, so the
+delegation is real and the fork test asserts it rather than assuming it.
+
+Two details cost the most time and are worth writing down:
+
+- **Token ids are not labelhashes.** ENSv2 keeps `tokenVersionId` in the lower 32 bits of
+  the id, so `ownerOf(labelhash(name))` returns `0x0` for *every* name. A live name on
+  Sepolia currently sits at version 9. The guard therefore never derives an id; it asks
+  the registry, which resolves the version itself. `script/js/ens-probe.mjs` proves this
+  against names it discovers from mint events.
+- **`ensNode` is the ENSv2 id of a name — `labelhash(label)`, not an ENSv1 namehash.** A
+  namehash cannot be turned back into a label, and without the label the registry finds no
+  entry. Version 1 therefore covers the names of one registry; subnames would need a walk
+  down `getSubregistry`.
+
 ## Status
 
 Honest state of the repository, not a plan.
@@ -74,20 +98,44 @@ Honest state of the repository, not a plan.
 |---|---|
 | Leaf hashing, JS ↔ Solidity parity proven | ✅ 6 tests |
 | `CitableRegistry` with position proofs | ✅ 10 tests |
+| Client library (segment, tree, bundle) | ✅ 41 JS tests |
+| JS-built proofs accepted by the contract | ✅ 4 tests |
+| ENSv2 token id derivation resolved | ✅ `script/js/ens-probe.mjs` |
+| `INameGuard` gate on `registerRoot` | ✅ 9 tests |
+| `ENSv2NameGuard` incl. Sepolia fork test | ✅ 15 + 5 tests |
 | Layer 3 approach measured and chosen | ✅ 3 probe scripts |
-| Deployment to Sepolia | ❌ not yet |
-| Client library (segment, tree, bundle) | ❌ not yet |
+| Deployment to Sepolia | ❌ script ready, not broadcast |
 | Frontend | ❌ not yet |
 
 ## Run it
 
 ```bash
 forge install
-npm install          # required: the leaf parity test shells out to the JS implementation
-forge test           # 16 tests
+npm install          # required: the parity tests shell out to the JS implementation
+forge test           # 44 tests; 5 more when SEPOLIA_RPC_URL is set
+npm test             # 41 client library tests
 
+cp .env.example .env # SEPOLIA_RPC_URL enables the ENSv2 fork test
+node script/js/ens-probe.mjs          # ENSv2 reachability and token id derivation
 node script/js/entailment-eval.mjs    # layer 3 evaluation, downloads a model on first run
 ```
+
+## Deploy
+
+```bash
+forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL                       # dry run
+forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL \
+  --private-key $PRIVATE_KEY --broadcast --verify                                 # for real
+```
+
+It deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
+`deployments/<chainid>.json`. A dry run writes nothing.
+
+| Contract | Sepolia |
+|---|---|
+| `CitableRegistry` | not deployed yet |
+| `ENSv2NameGuard` | not deployed yet |
+| ENSv2 `ETHRegistry` | `0xBDC85dD5b15D7ecb354cd7cb6f2c50b4f2c4F0E2` |
 
 ## Limitations
 
@@ -97,8 +145,14 @@ node script/js/entailment-eval.mjs    # layer 3 evaluation, downloads a model on
 - **16 test cases are a signal, not a validation.** Real confidence needs 50–100.
 - **Irony and quote-within-quote are not handled.** Question-vs-claim is (0.087 vs 0.931).
 - **Not registered ≠ fabricated.** Absence proves nothing about unregistered text.
-- **`ensNode` is unverified by the contract** — anyone can claim any name until the ENS
-  layer closes that hole.
+- **The name check is off until a guard is set.** With `nameGuard` at `address(0)` anyone
+  can still claim any name; the deploy script sets the guard in the same run.
+- **The registry owner can switch the guard off again.** A known central point. It cannot
+  alter statements already registered, and no proof depends on it.
+- **The guard covers one registry, second-level names only.** Subnames need a walk down
+  `getSubregistry` and are not built.
+- **A name that changes hands takes its publishing right with it.** Statements already
+  registered keep their recorded `ensNode`; the guard only governs new ones.
 - **First registration wins.** Identical text yields an identical root, so someone can
   register another author's text first. Documented, not yet fixed.
 - **The contract cannot check that the CID matches the root.** It never sees the text. A

@@ -27,10 +27,13 @@ jobs:
         with:
           node-version: 22
 
-      # The leaf parity test shells out to script/js/leaf.mjs via ffi, so the JS
-      # dependencies must exist before forge test runs.
+      # The parity tests shell out to Node via ffi, so the JS dependencies must
+      # exist before forge test runs.
       - name: Install JS dependencies
         run: npm ci
+
+      - name: Run client library tests
+        run: npm test
 
       - name: Show Forge version
         run: forge --version
@@ -41,5 +44,6 @@ jobs:
       - name: Run Forge build
         run: forge build --sizes
 
+      # Without SEPOLIA_RPC_URL the ENSv2 fork test skips itself.
       - name: Run Forge tests
         run: forge test -vvv
