@@ -338,12 +338,28 @@ Risiko: dünne Dokumentation, Bugs, die vor dir niemand gefunden hat.
 
 Bei der Einreichung wählst du bis zu drei Partner-Preise.
 
-### ENS — $4.500 (Haupt)
+### ENS — $5.000 gesamt (Haupt)
+
+**Korrigiert am 09.09.2026** (Quelle: ethglobal.com/events/ethonline2026/prizes/ens):
+Nicht ein Preis von $4.500, sondern "Best Use of ENSv2" mit $4.500 verteilt auf vier
+Plätze ($1.500 / $1.500 / $1.000 / $500), plus $500 für den Continuity Track. Die
+Chancen sind damit deutlich besser als ein einzelner Hauptpreis suggeriert.
+Anforderung wörtlich: ENSv2 auf Sepolia, "central to the product, not a cosmetic
+add-on", funktionierende Demo ohne hartkodierte Werte.
+
 Genutzte ENSv2-Features und warum sie tragend sind: Ohne Identitätsschicht ist jede Signatur anonym, und "Schlüssel 0x7f3a… hat das gesagt" beweist gegenüber einem Leser nichts. Die Bindung an einen Namen ist keine Zierde, sie ist der Grund, warum der Beweis überzeugt.
 
 Im Formular: konkrete Codezeilen verlinken, nicht nur das Repo.
 
-### The Graph — $5.000 (nur wenn Zeit)
+### The Graph — $15.000 — GESTRICHEN
+
+**Korrigiert am 09.09.2026:** Der Topf ist $15.000, nicht $5.000 — und verlangt
+"composable data products or AI tooling". Ein Subgraph über ein einzelnes Event ist
+beides nicht, und `rootsByAuthor()` im Contract liefert die Autorenliste ohnehin ohne
+Indexer. Gestrichen zugunsten von ENS.
+
+Ursprüngliche Einschätzung:
+
 Subgraph indexiert `StatementRegistered`. Live-Daten aus Subgraph Studio, keine Mocks. Ehrlich: Das ist ein einzelner Subgraph, und die Bounty verlangt mehr als das. Rechne dir keine großen Chancen aus, aber es kostet wenig, wenn der Rest steht.
 
 ### World — bewusst ausgelassen
