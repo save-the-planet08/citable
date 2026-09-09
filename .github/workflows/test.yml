@@ -22,6 +22,16 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The leaf parity test shells out to script/js/leaf.mjs via ffi, so the JS
+      # dependencies must exist before forge test runs.
+      - name: Install JS dependencies
+        run: npm ci
+
       - name: Show Forge version
         run: forge --version
 
