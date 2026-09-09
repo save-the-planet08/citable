@@ -14,9 +14,9 @@ import {ENSv2NameGuard, IENSv2Registry} from "../src/ENSv2NameGuard.sol";
 ///                 --private-key $PRIVATE_KEY --broadcast --verify
 ///
 /// Der Guard entsteht nach der Registry, weil `setNameGuard` den Besitzer verlangt und
-/// den setzt erst der Konstruktor der Registry. Geschrieben wird
-/// `deployments/<chainid>.json` nur im Ernstfall — ein Probelauf soll die Adressen der
-/// echten Deployments nicht überschreiben.
+/// den setzt erst der Konstruktor der Registry. Geschrieben wird `deployments/sepolia.json`
+/// nur im Ernstfall — ein Probelauf soll die Adressen der echten Deployments nicht
+/// überschreiben.
 contract Deploy is Script {
     /// @dev ENSv2 ETHRegistry auf Sepolia, https://docs.ens.domains/learn/deployments/.
     ///      Bestätigt von script/js/ens-probe.mjs.
@@ -57,7 +57,10 @@ contract Deploy is Script {
         vm.serializeUint(json, "publishRole", publishRole);
         string memory out = vm.serializeUint(json, "deployedAt", block.timestamp);
 
-        string memory path = string.concat("deployments/", vm.toString(block.chainid), ".json");
+        // Nach Netzname, wo es einen gibt — `deployments/sepolia.json` liest sich in
+        // einer Einreichung besser als eine Kettennummer.
+        string memory network = block.chainid == 11155111 ? "sepolia" : vm.toString(block.chainid);
+        string memory path = string.concat("deployments/", network, ".json");
         vm.writeJson(out, path);
         console.log("written to       ", path);
     }

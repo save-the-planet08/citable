@@ -8,5 +8,8 @@ pragma solidity ^0.8.24;
 ///      `ENSv2NameGuard` ist es die ENSv2-Kennung eines Namens in der konfigurierten
 ///      Registry (`labelhash(label)`), nicht der klassische ENSv1-Namehash.
 interface INameGuard {
+    /// @param ensNode Der Name, unter dem veröffentlicht werden soll.
+    /// @param account Das Konto, das `registerRoot` aufruft.
+    /// @return true, wenn `account` unter `ensNode` veröffentlichen darf.
     function mayPublish(bytes32 ensNode, address account) external view returns (bool);
 }

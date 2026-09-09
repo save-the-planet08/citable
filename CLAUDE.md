@@ -90,7 +90,7 @@ der ENSv1-Namehash. Aus einem Namehash ließe sich das Label nicht zurückgewinn
 
 **Der Deploy-Pfad ist bewiesen, nicht bloß geschrieben.** Gegen einen lokalen Anvil-Fork
 von Sepolia wurde wirklich gebroadcastet: beide Contracts deployt, Guard verdrahtet,
-`deployments/11155111.json` geschrieben. Danach der Rauchtest mit echtem ENS-Zustand — ein
+`deployments/sepolia.json` geschrieben. Danach der Rauchtest mit echtem ENS-Zustand — ein
 realer Namensinhaber registriert, der Beweis aus `lib/citable/` wird von `verifySegment`
 angenommen, an falscher Position abgelehnt, ein Fremder scheitert an `NotAuthorized`. Die
 Artefakte des Forks sind wieder entfernt.

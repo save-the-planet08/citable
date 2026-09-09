@@ -130,7 +130,7 @@ forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL \
 ```
 
 It deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
-`deployments/<chainid>.json`. A dry run writes nothing.
+`deployments/sepolia.json`. A dry run writes nothing.
 
 | Contract | Sepolia |
 |---|---|

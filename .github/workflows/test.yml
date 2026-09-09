@@ -44,6 +44,9 @@ jobs:
       - name: Run Forge build
         run: forge build --sizes
 
-      # Without SEPOLIA_RPC_URL the ENSv2 fork test skips itself.
+      # Set the SEPOLIA_RPC_URL repository secret to run the ENSv2 fork test here too.
+      # Without it the fork test skips itself and the rest still runs.
       - name: Run Forge tests
+        env:
+          SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
         run: forge test -vvv
