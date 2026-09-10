@@ -6,9 +6,9 @@ import {INameGuard} from "./INameGuard.sol";
 import {Leaf} from "./Leaf.sol";
 
 /// @title CitableRegistry
-/// @notice Register für Merkle-Wurzeln von Aussagen, mit Positionsbeweis.
-/// @dev Speichert keinen Text. Volltext, Segmente und Vektoren liegen im IPFS-Bündel,
-///      an das die CID bindet — siehe CONCEPT.md.
+/// @notice Registry for merkle roots of statements, with position proofs.
+/// @dev Stores no text. Full text, segments and vectors live in the IPFS bundle the CID
+///      binds to — see CONCEPT.md.
 contract CitableRegistry {
     struct Statement {
         address author;
@@ -24,15 +24,15 @@ contract CitableRegistry {
 
     uint256 public statementCount;
 
-    /// @notice Prüft die Namensberechtigung beim Registrieren.
-    /// @dev `address(0)` heißt: keine Prüfung. Das ist das Verhalten vor der ENS-Schicht
-    ///      und bleibt der Ausgangszustand nach dem Deploy, bis der Guard gesetzt wird.
+    /// @notice Checks the name authorisation when registering.
+    /// @dev `address(0)` means: no check. That is the behaviour from before the ENS layer
+    ///      and stays the initial state after deployment until the guard is set.
     INameGuard public nameGuard;
 
-    /// @notice Darf den Guard setzen. Kein Transfer, kein Renounce — bewusst klein.
-    /// @dev Bekannte Zentralisierung: Wer das ist, kann die Namensprüfung abschalten.
-    ///      Bereits eingetragene Aussagen ändert das nicht, und Beweise bleiben gültig —
-    ///      der Guard entscheidet nur, wer künftig einen Namen behaupten darf.
+    /// @notice May set the guard. No transfer, no renounce — deliberately small.
+    /// @dev Known centralisation: whoever this is can switch the name check off. It does
+    ///      not change statements already recorded, and proofs stay valid — the guard only
+    ///      decides who may claim a name from here on.
     address public immutable owner;
 
     event StatementRegistered(
@@ -58,18 +58,18 @@ contract CitableRegistry {
     }
 
     // ---------------------------------------------------------------
-    // Schreiben
+    // Writing
     // ---------------------------------------------------------------
 
-    /// @notice Trägt eine Aussage ein.
-    /// @dev Ist kein Guard gesetzt, darf jeder jeden Namen behaupten — `ensNode` ist dann
-    ///      unbelegte Metadatenangabe. Mit Guard revertet der Aufruf mit `NotAuthorized`.
+    /// @notice Records a statement.
+    /// @dev With no guard set, anyone may claim any name — `ensNode` is then unbacked
+    ///      metadata. With a guard, the call reverts with `NotAuthorized`.
     ///
-    ///      `segmentCount` ist eine Angabe des Autors und wird NICHT gegen den Baum
-    ///      geprüft — aus einer Wurzel lässt sich die Blattzahl nicht zurückrechnen. Sie
-    ///      dient nur der Bereichsprüfung in `verifySegment`. Die belastbare Zahl steht im
-    ///      IPFS-Bündel: Wer es gegen die Wurzel prüft (`verifyBundle`), hat *n* bewiesen.
-    ///      Das Frontend zeigt darum "Absatz i von n" aus dem Bündel, nie aus diesem Feld.
+    ///      `segmentCount` is a claim by the author and is NOT checked against the tree —
+    ///      the leaf count cannot be derived from a root. It only serves the range check in
+    ///      `verifySegment`. The dependable number lives in the IPFS bundle: whoever checks
+    ///      it against the root (`verifyBundle`) has proven *n*. The frontend therefore
+    ///      shows "paragraph i of n" from the bundle, never from this field.
     function registerRoot(bytes32 root, bytes32 ensNode, string calldata cid, uint32 segmentCount) external {
         if (root == bytes32(0)) revert EmptyRoot();
         if (statements[root].timestamp != 0) revert AlreadyRegistered();
@@ -95,13 +95,13 @@ contract CitableRegistry {
         emit StatementRegistered(root, msg.sender, ensNode, segmentCount, cid);
     }
 
-    /// @notice Setzt oder entfernt die Namensprüfung.
-    /// @dev Getrennt vom Konstruktor, weil der Guard die Registry-Adresse noch nicht
-    ///      kennen kann, wenn die Registry gerade erst entsteht.
+    /// @notice Sets or removes the name check.
+    /// @dev Separate from the constructor because the guard cannot know the registry
+    ///      address yet while the registry is still being created.
     ///
-    ///      Eine Adresse ohne Code würde jedes `registerRoot` reverten lassen — der
-    ///      Aufruf an `mayPublish` scheitert dann an der Codeprüfung des Compilers. Ein
-    ///      Vertipper legt also die ganze Registry lahm, deshalb hier abgefangen.
+    ///      An address without code would make every `registerRoot` revert — the call to
+    ///      `mayPublish` then fails the compiler's code check. A typo would take the whole
+    ///      registry down, hence the guard against it here.
     function setNameGuard(INameGuard guard) external {
         if (msg.sender != owner) revert NotOwner();
         if (address(guard) != address(0) && address(guard).code.length == 0) revert GuardWithoutCode();
@@ -109,9 +109,9 @@ contract CitableRegistry {
         emit NameGuardChanged(address(guard));
     }
 
-    /// @notice Der Autor kann eine Aussage als zurückgezogen markieren.
-    /// @dev Beweise bleiben gültig. Zurückziehen ist Metadaten, kein Löschen —
-    ///      sonst könnte ein Autor unbequeme Zitate nachträglich entwerten.
+    /// @notice The author can mark a statement as withdrawn.
+    /// @dev Proofs stay valid. Withdrawing is metadata, not deletion — otherwise an author
+    ///      could devalue inconvenient quotes after the fact.
     function withdrawStatement(bytes32 root) external {
         Statement storage s = statements[root];
         if (s.timestamp == 0) revert UnknownStatement();
@@ -122,18 +122,18 @@ contract CitableRegistry {
     }
 
     // ---------------------------------------------------------------
-    // Lesen
+    // Reading
     // ---------------------------------------------------------------
 
-    /// @notice Blattberechnung, öffentlich abrufbar.
-    /// @dev Existiert, damit das Frontend seine JS-Implementierung gegen die Kette prüfen kann.
+    /// @notice Leaf computation, publicly callable.
+    /// @dev Exists so the frontend can check its JS implementation against the chain.
     function leafOf(uint256 index, string calldata segment) public pure returns (bytes32) {
         return Leaf.leafOf(index, segment);
     }
 
-    /// @notice Beweist, dass `segment` an Position `index` in der Aussage `root` stand.
-    /// @dev Prüft `withdrawn` bewusst nicht. Gibt false statt zu reverten — das Frontend
-    ///      unterscheidet die Fälle über getStatement().
+    /// @notice Proves that `segment` stood at position `index` in the statement `root`.
+    /// @dev Deliberately does not check `withdrawn`. Returns false instead of reverting —
+    ///      the frontend tells the cases apart via getStatement().
     function verifySegment(bytes32 root, uint256 index, string calldata segment, bytes32[] calldata proof)
         external
         view
