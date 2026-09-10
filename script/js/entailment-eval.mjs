@@ -4,7 +4,7 @@
 //
 //   node script/js/entailment-eval.mjs
 import { AutoModelForSequenceClassification, AutoTokenizer } from "@xenova/transformers";
-import { unsupportedTokens } from "./guards.mjs";
+import { unsupportedTokens } from "../../lib/citable/guards.mjs";
 
 const MODEL = "Xenova/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7";
 
