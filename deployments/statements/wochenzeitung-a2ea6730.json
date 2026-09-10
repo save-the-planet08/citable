@@ -1,0 +1,12 @@
+{
+  "root": "0xa2ea6730bdfce31305c0b43b999aa2a430cacf97324b3329bd4e56c1891ebc4b",
+  "cid": "bafkreifvnoguinbhn5qoqsn3mx7rljasw4rmsssjkn3pbjli4ghysboc2y",
+  "ensNode": "0xbbf0e55286c25a54bfcddd33259f2b2e4d38041668167fff2a9b1b0a1e31264f",
+  "label": "wochenzeitung",
+  "segmentCount": 7,
+  "author": "0x5b5Bd6a1523612B67C32D4aDC8b52766d0085D19",
+  "registry": "0xD3B137b6c6f572290Cf91ac312319364822792e7",
+  "txHash": "0xb845949f606dc4cf36a0a0eddecc974569d4704ff21106a20562cbeaf875b324",
+  "block": 11676951,
+  "source": "statements/wochenzeitung/anhoerung.txt"
+}

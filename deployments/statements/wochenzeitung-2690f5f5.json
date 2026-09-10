@@ -1,0 +1,12 @@
+{
+  "root": "0x2690f5f5a083942a3a35c2ecc0c23434b4bf6615166fab6dda45b54933b45caf",
+  "cid": "bafkreigvmtrim5iff7myblynsoedmlrh3sw4jat3hh4xeqz74zbe7macw4",
+  "ensNode": "0xbbf0e55286c25a54bfcddd33259f2b2e4d38041668167fff2a9b1b0a1e31264f",
+  "label": "wochenzeitung",
+  "segmentCount": 6,
+  "author": "0x5b5Bd6a1523612B67C32D4aDC8b52766d0085D19",
+  "registry": "0xD3B137b6c6f572290Cf91ac312319364822792e7",
+  "txHash": "0xa7f30d5580e9159d0d2deb8c7adb561c3d5af2c043428a0234e0bd436bd8e96d",
+  "block": 11676953,
+  "source": "statements/wochenzeitung/quartalszahlen.txt"
+}
