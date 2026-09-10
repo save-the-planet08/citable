@@ -1,4 +1,4 @@
-import type { Verdict } from "@/lib/verify";
+import type { Provenance, Verdict } from "@/lib/verify";
 import type { Statement } from "@/lib/chain";
 import { describeQuery, type SearchResult } from "@/lib/search";
 import { PositionComb } from "./PositionComb";
@@ -92,7 +92,7 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
             {verdict.after && <Neighbour text={verdict.after} where="after" />}
           </div>
 
-          <Apparatus statement={verdict.statement}>
+          <Apparatus statement={verdict.statement} via={verdict.via}>
             <Row label="Merkle proof" value={`${verdict.proof.length} nodes, accepted on chain`} />
           </Apparatus>
         </Panel>
@@ -117,7 +117,7 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
             A shortened quote can be accurate and still mislead. The rest of the paragraph is
             the context that was left out.
           </p>
-          <Apparatus statement={verdict.statement} />
+          <Apparatus statement={verdict.statement} via={verdict.via} />
         </Panel>
       );
 
@@ -132,7 +132,7 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
             That says nothing about whether the words were said. It says they are not in{" "}
             <em>this</em> statement. Not registered is not the same as invented.
           </p>
-          <Apparatus statement={verdict.statement} />
+          <Apparatus statement={verdict.statement} via={verdict.via} />
         </Panel>
       );
 
@@ -158,6 +158,12 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
             statement. Either the file was swapped after registration, or the CID points
             somewhere else entirely.
           </p>
+          <pre
+            className="mt-4 overflow-x-auto border p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap"
+            style={{ borderColor: "var(--rule)", color: "var(--ink-soft)" }}
+          >
+            {verdict.detail}
+          </pre>
           <Apparatus statement={verdict.statement} />
         </Panel>
       );
@@ -227,9 +233,11 @@ function Neighbour({ text, where }: { text: string; where: "before" | "after" })
 
 function Apparatus({
   statement,
+  via,
   children,
 }: {
   statement: Statement;
+  via?: Provenance;
   children?: React.ReactNode;
 }) {
   const registered = new Date(Number(statement.timestamp) * 1000);
@@ -240,6 +248,17 @@ function Apparatus({
     >
       <Row label="Registered" value={registered.toISOString().slice(0, 10)} />
       <Row label="Author" value={statement.author} mono />
+      <Row label="CID" value={statement.cid} mono />
+      {via && (
+        <Row
+          label="Bundle from"
+          value={
+            via.local
+              ? `${via.source} — no public gateway answered, so the copy this app ships was used. It had to rebuild the root like any other source.`
+              : via.source
+          }
+        />
+      )}
       {statement.withdrawn && (
         <Row
           label="Withdrawn"

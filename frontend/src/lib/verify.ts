@@ -5,8 +5,20 @@
 // A bundle that does not rebuild the root is not this statement's bundle, and nothing it
 // says may be shown — otherwise anyone could swap the content behind a CID.
 import { citable, type Bundle } from "./citable";
-import { fetchBundle } from "./ipfs";
+import { fetchBundle, BundleFetchError, type FetchedBundle } from "./ipfs";
 import { getStatement, verifySegmentOnChain, type Statement } from "./chain";
+
+/**
+ * Where the bundle came from, carried through to the panel.
+ *
+ * Part of the apparatus, not a debug field: which source answered is exactly the kind of
+ * thing a reader is entitled to see, and the honest place to admit that the app served
+ * its own copy rather than the public network.
+ */
+export interface Provenance {
+  source: string;
+  local: boolean;
+}
 
 export type Verdict =
   /** Stage 1: the fragment is a whole paragraph, and the chain confirmed the proof. */
@@ -19,6 +31,7 @@ export type Verdict =
       before: string | null;
       after: string | null;
       proof: `0x${string}`[];
+      via: Provenance;
     }
   /** Stage 2: the fragment sits inside a paragraph, but is not the whole one. */
   | {
@@ -27,12 +40,13 @@ export type Verdict =
       index: number;
       total: number;
       full: string;
+      via: Provenance;
     }
   /** Neither. Explicitly not "made up" — see CONCEPT.md section 6. */
-  | { kind: "no-match"; statement: Statement; total: number }
+  | { kind: "no-match"; statement: Statement; total: number; via: Provenance }
   | { kind: "unregistered" }
-  /** The bundle behind the CID does not rebuild the root. Nothing from it is shown. */
-  | { kind: "bundle-mismatch"; statement: Statement }
+  /** Some source answered, but its bytes do not rebuild the root. Nothing from it is shown. */
+  | { kind: "bundle-mismatch"; statement: Statement; detail: string }
   | { kind: "error"; message: string };
 
 /** Same normalisation the segmenter applies, so stage 1 compares like against like. */
@@ -52,19 +66,28 @@ export async function verify(root: `0x${string}`, fragment: string): Promise<Ver
   }
   if (!statement) return { kind: "unregistered" };
 
-  let raw: unknown;
+  const { verifyBundle, buildTree } = await citable();
+
+  // The anchor, and it is handed to the fetch rather than run after it: several sources
+  // are raced, and a source that serves bytes which do not rebuild the root loses the
+  // race instead of ending the search. So a copy served by this app is worth no more than
+  // a public gateway — both have to clear the same check to be believed.
+  let fetched: FetchedBundle;
   try {
-    raw = await fetchBundle(statement.cid);
+    fetched = await fetchBundle(statement.cid, (data) => verifyBundle(data, root));
   } catch (error) {
+    // Two different failures wear the same exception. Something answering with the wrong
+    // bytes is an accusation; nothing answering at all is an outage. Saying the first when
+    // the second happened would charge a publisher with tampering because a gateway was
+    // down, so the flag decides and not the convenience of one code path.
+    if (error instanceof BundleFetchError && error.served) {
+      return { kind: "bundle-mismatch", statement, detail: error.message };
+    }
     return { kind: "error", message: message(error) };
   }
 
-  const { verifyBundle, buildTree } = await citable();
-
-  // The anchor. Everything below trusts the bundle only because this passed.
-  if (!verifyBundle(raw, root)) return { kind: "bundle-mismatch", statement };
-
-  const bundle = raw as Bundle;
+  const bundle = fetched.data as Bundle;
+  const via: Provenance = { source: fetched.source, local: fetched.local };
   // verifyBundle already proved index and text of every segment, so the array order can be
   // relied on once it is sorted by the field it verified.
   const texts = [...bundle.segments].sort((a, b) => a.index - b.index).map((s) => s.text);
@@ -90,6 +113,7 @@ export async function verify(root: `0x${string}`, fragment: string): Promise<Ver
         before: exact > 0 ? texts[exact - 1] : null,
         after: exact + 1 < total ? texts[exact + 1] : null,
         proof,
+        via,
       };
     }
     // The bundle rebuilt the root, so a rejected proof means the two disagree about the
@@ -103,10 +127,10 @@ export async function verify(root: `0x${string}`, fragment: string): Promise<Ver
   // Stage 2 — the fragment is contained in a paragraph, but is not the whole paragraph.
   const inside = texts.findIndex((t) => t.includes(needle));
   if (inside !== -1) {
-    return { kind: "partial", statement, index: inside, total, full: texts[inside] };
+    return { kind: "partial", statement, index: inside, total, full: texts[inside], via };
   }
 
-  return { kind: "no-match", statement, total };
+  return { kind: "no-match", statement, total, via };
 }
 
 function message(error: unknown): string {
