@@ -1,5 +1,10 @@
 # Build-Auftrag — Basis
 
+> **Abgearbeitet am 09.09.2026.** Aufgaben 1, 2a, 2b und 2c sind abgenommen; von Aufgabe 3
+> steht das Skript und der Broadcast-Pfad ist gegen einen Sepolia-Fork bewiesen, der
+> Broadcast auf das echte Netz fehlt. Diese Datei ist ab hier Nachweis, was beauftragt war
+> — der aktuelle Stand steht in `REVIEW.md`.
+
 Dieser Auftrag ist vollständig und eindeutig. Er baut die Basis von Citable in einem Zug.
 Alles Nötige steht hier oder in den genannten Dateien; nichts muss erraten werden.
 

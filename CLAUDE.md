@@ -2,6 +2,9 @@
 
 Verifizierbares Publishing-Register mit Positionsbeweis. ETHOnline 2026, Abgabe 16.09.2026.
 
+**Laufendes Kapitel: `REVIEW.md`** — verstehen statt bauen. Kein neuer Code, bis Frederik
+den Stand von `src/` durchhat. Dort steht auch der aktuelle Stand mit Zahlen.
+
 **Maßgebliche Spezifikation: `CONCEPT.md`** — beide Schichten, mit den Messwerten, auf denen
 die Entscheidungen beruhen. `IDEA.md` ist der erste Entwurf und kennt Schicht 3 nicht; es
 gilt nur noch für Tagesplan, Video-Skript und Bounty-Zuordnung. Bei Widerspruch gewinnt
@@ -95,9 +98,15 @@ realer Namensinhaber registriert, der Beweis aus `lib/citable/` wird von `verify
 angenommen, an falscher Position abgelehnt, ein Fremder scheitert an `NotAuthorized`. Die
 Artefakte des Forks sind wieder entfernt.
 
-**Als Nächstes:** Broadcast auf das echte Sepolia (~0,0053–0,009 ETH, braucht einen
-finanzierten Schlüssel in `.env`), danach Adressen in README und hier eintragen. Dann
-Frontend, Verify-Screen zuerst.
+**Als Nächstes:** siehe `REVIEW.md`. Erst `src/` verstehen, dann Broadcast auf das echte
+Sepolia (~0,0053–0,009 ETH, braucht einen finanzierten Schlüssel in `.env`), danach
+Adressen in README und hier eintragen. Dann Frontend, Verify-Screen zuerst.
+
+**Vor dem Deploy wissen:** Der Schlüssel wird dauerhaft `owner` der Registry. `owner` ist
+`immutable` — nur dieses Konto kann je den Guard setzen oder tauschen.
+
+`BUILD.md` ist abgearbeitet bis auf den Broadcast und gilt nur noch als Nachweis, was
+beauftragt war.
 
 **Nicht vergessen — `segmentCount` ist keine bewiesene Zahl.** Aus einer Wurzel lässt sich
 die Blattzahl nicht zurückrechnen. Das Feld dient nur der Bereichsprüfung. Das *n* in
