@@ -1,30 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { verify, type Verdict } from "@/lib/verify";
-import { VerdictPanel } from "@/components/Verdict";
+import { search, type Progress, type SearchResult } from "@/lib/search";
+import { parseQuery } from "@/lib/lookup";
+import { ResultPanel } from "@/components/Verdict";
 import { REGISTRY } from "@/lib/chain";
 
-const ROOT_PATTERN = /^0x[0-9a-fA-F]{64}$/;
-
 export default function VerifyScreen() {
-  const [root, setRoot] = useState("");
+  const [who, setWho] = useState("");
   const [fragment, setFragment] = useState("");
-  const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [result, setResult] = useState<SearchResult | null>(null);
+  const [progress, setProgress] = useState<Progress | null>(null);
   const [checking, setChecking] = useState(false);
 
-  const rootValid = ROOT_PATTERN.test(root.trim());
-  const ready = rootValid && fragment.trim().length > 0;
+  const query = parseQuery(who);
+  const ready = query !== null && fragment.trim().length > 0;
 
   async function check(event: React.FormEvent) {
     event.preventDefault();
     if (!ready || checking) return;
     setChecking(true);
-    setVerdict(null);
+    setResult(null);
+    setProgress(null);
     try {
-      setVerdict(await verify(root.trim() as `0x${string}`, fragment));
+      setResult(await search(who, fragment, setProgress));
     } finally {
       setChecking(false);
+      setProgress(null);
     }
   }
 
@@ -43,32 +45,34 @@ export default function VerifyScreen() {
           className="mt-5 max-w-xl text-[15px] leading-relaxed"
           style={{ color: "var(--ink-soft)" }}
         >
-          Paste a fragment and the root of the statement it came from. Citable rebuilds the
-          text from IPFS, checks it against the root, and asks the contract which paragraph
-          the fragment was — and where it stood.
+          Name who is being quoted and paste what they are supposed to have said. Citable
+          searches every statement that name has registered, rebuilds each text from IPFS,
+          and asks the contract which paragraph the quote was — and where it stood.
         </p>
       </header>
 
       <form onSubmit={check} className="mt-12">
         <label className="block">
-          <span className="eyebrow">Statement root</span>
+          <span className="eyebrow">Who is being quoted</span>
           <input
-            className="field mt-2 font-mono text-sm"
-            placeholder="0x…"
-            value={root}
-            onChange={(e) => setRoot(e.target.value)}
+            className="field mt-2 text-base"
+            placeholder="wochenzeitung.eth"
+            value={who}
+            onChange={(e) => setWho(e.target.value)}
             spellCheck={false}
             autoComplete="off"
           />
         </label>
-        {root.length > 0 && !rootValid && (
-          <p className="mt-2 text-sm" style={{ color: "var(--alarm)" }}>
-            A root is 0x followed by 64 hex characters.
-          </p>
-        )}
+        <p className="mt-2 text-xs" style={{ color: "var(--ink-faint)" }}>
+          {query?.kind === "root"
+            ? "Reading as a statement root."
+            : query?.kind === "author"
+              ? "Reading as an author address."
+              : "An ENS name. A statement root or an address works too, if you have one."}
+        </p>
 
         <label className="mt-7 block">
-          <span className="eyebrow">The quoted fragment</span>
+          <span className="eyebrow">What they are supposed to have said</span>
           <textarea
             className="field mt-2 font-display text-base leading-relaxed"
             rows={5}
@@ -88,12 +92,14 @@ export default function VerifyScreen() {
             {checking ? "Checking…" : "Check this quote"}
           </button>
           <p className="text-xs" style={{ color: "var(--ink-faint)" }}>
-            Everything runs in your browser. Nothing is sent to a server.
+            {progress && progress.total > 0
+              ? `Statement ${progress.done + 1} of ${progress.total}…`
+              : "Everything runs in your browser. Nothing is sent to a server."}
           </p>
         </div>
       </form>
 
-      {verdict && <VerdictPanel verdict={verdict} />}
+      {result && <ResultPanel result={result} />}
 
       <footer
         className="mt-20 border-t pt-6 text-xs leading-relaxed"
@@ -112,8 +118,8 @@ export default function VerifyScreen() {
         </p>
         <p className="mt-2 max-w-xl">
           A proof shows that a paragraph stood at a position when the root was registered. It
-          does not show that the statement is true, and a statement that is not registered
-          here was not necessarily invented.
+          does not show that the statement is true, and a quote that is not found here was
+          not necessarily invented.
         </p>
       </footer>
     </main>

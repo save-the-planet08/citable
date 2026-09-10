@@ -1,6 +1,74 @@
 import type { Verdict } from "@/lib/verify";
 import type { Statement } from "@/lib/chain";
+import { describeQuery, type SearchResult } from "@/lib/search";
 import { PositionComb } from "./PositionComb";
+
+export function ResultPanel({ result }: { result: SearchResult }) {
+  switch (result.kind) {
+    case "found":
+      return <VerdictPanel verdict={result.verdict} />;
+
+    case "no-statements":
+      return (
+        <Panel
+          tone="plain"
+          label="Nothing registered"
+          claim={`${describeQuery(result.query)} has not registered any statement here.`}
+        >
+          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+            Citable can only speak about what it holds. An empty registry says nothing about
+            what was or was not said.
+          </p>
+        </Panel>
+      );
+
+    // The honest absence claim: it names its own denominator. Without that number this
+    // panel would be an unqualified "no", which is exactly what this project refuses.
+    case "absent":
+      return (
+        <Panel
+          tone="plain"
+          label="Not found"
+          claim={`This quote is in none of the ${result.statements} statements registered by ${describeQuery(result.query)}.`}
+        >
+          <dl className="flex flex-wrap gap-x-10 gap-y-3">
+            <Stat value={String(result.statements)} label="statements searched" />
+            <Stat value={String(result.paragraphs)} label="paragraphs compared" />
+          </dl>
+          <p className="mt-6 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+            That is a statement about this registry, not about the world. The words may well
+            have been said somewhere Citable does not hold. Not registered is not invented.
+          </p>
+          {result.capped && (
+            <p className="mt-3 text-sm" style={{ color: "var(--amber)" }}>
+              Only the {result.statements} most recent statements were checked. There are
+              more, so this count is a floor, not the full denominator.
+            </p>
+          )}
+        </Panel>
+      );
+
+    case "error":
+      return (
+        <Panel tone="alarm" label="Could not check" claim={result.message}>
+          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+            Nothing was proven and nothing was disproven.
+          </p>
+        </Panel>
+      );
+  }
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <dd className="font-mono text-2xl" style={{ color: "var(--ink)" }}>
+        {value}
+      </dd>
+      <dt className="eyebrow mt-1">{label}</dt>
+    </div>
+  );
+}
 
 export function VerdictPanel({ verdict }: { verdict: Verdict }) {
   switch (verdict.kind) {
