@@ -2,11 +2,25 @@ import type { Provenance, Verdict } from "@/lib/verify";
 import type { Statement } from "@/lib/chain";
 import { describeQuery, type SearchResult } from "@/lib/search";
 import { PositionComb } from "./PositionComb";
+import { Stage3 } from "./Stage3";
 
-export function ResultPanel({ result }: { result: SearchResult }) {
+export function ResultPanel({ result, claim }: { result: SearchResult; claim: string }) {
   switch (result.kind) {
     case "found":
-      return <VerdictPanel verdict={result.verdict} />;
+      return (
+        <>
+          <VerdictPanel verdict={result.verdict} />
+          {/* A no-match inside a single statement is the same situation as an absence
+              across several: the words are not there verbatim, and the honest next
+              question is whether they are there in another language. */}
+          {result.verdict.kind === "no-match" && (
+            <Stage3
+              corpus={[{ root: result.root, texts: result.verdict.texts }]}
+              claim={claim}
+            />
+          )}
+        </>
+      );
 
     case "no-statements":
       return (
@@ -26,6 +40,7 @@ export function ResultPanel({ result }: { result: SearchResult }) {
     // panel would be an unqualified "no", which is exactly what this project refuses.
     case "absent":
       return (
+        <>
         <Panel
           tone="plain"
           label="Not found"
@@ -46,6 +61,8 @@ export function ResultPanel({ result }: { result: SearchResult }) {
             </p>
           )}
         </Panel>
+        <Stage3 corpus={result.corpus} claim={claim} />
+        </>
       );
 
     case "error":

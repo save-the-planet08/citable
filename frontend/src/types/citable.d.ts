@@ -37,3 +37,13 @@ declare module "@citable/index.mjs" {
   export function bundleBytes(bundle: Bundle): Uint8Array;
   export function bundleCid(bundle: Bundle): string;
 }
+
+declare module "@citable/guards.mjs" {
+  /**
+   * Values the claim asserts that the paragraph never mentions, normalised to the value
+   * and not the spelling: "four", "vier" and "cuatro" all become "n:4". Non-empty means
+   * the claim states something the text does not, however close the two read.
+   */
+  export function unsupportedTokens(paragraph: string, claim: string): string[];
+  export function isGuarded(paragraph: string, claim: string): boolean;
+}

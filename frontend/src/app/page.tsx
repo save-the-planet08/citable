@@ -99,7 +99,7 @@ export default function VerifyScreen() {
         </div>
       </form>
 
-      {result && <ResultPanel result={result} />}
+      {result && <ResultPanel result={result} claim={fragment} />}
 
       <footer
         className="mt-20 border-t pt-6 text-xs leading-relaxed"

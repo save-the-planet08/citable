@@ -30,6 +30,14 @@ export type SearchResult =
       statements: number;
       paragraphs: number;
       capped: boolean;
+      /**
+       * Everything the search actually read, kept for stage 3.
+       *
+       * Stage 3 has to measure against the same corpus the absence claim was made about,
+       * or the denominator on screen and the text being measured are two different things.
+       * Re-fetching would also risk a different answer than the one already shown.
+       */
+      corpus: Scanned[];
     }
   /** The name has never registered anything. Different from "searched and not found". */
   | { kind: "no-statements"; query: Searchable }
@@ -38,6 +46,12 @@ export type SearchResult =
 export interface Progress {
   done: number;
   total: number;
+}
+
+/** One statement as the search saw it — paragraphs already held against the root. */
+export interface Scanned {
+  root: `0x${string}`;
+  texts: string[];
 }
 
 export async function search(
@@ -78,6 +92,7 @@ export async function search(
 
   let paragraphs = 0;
   let bestPartial: { root: `0x${string}`; verdict: Verdict } | null = null;
+  const corpus: Scanned[] = [];
 
   for (const [i, root] of shortlist.entries()) {
     onProgress?.({ done: i, total: shortlist.length });
@@ -94,6 +109,7 @@ export async function search(
     if (verdict.kind === "partial" && !bestPartial) bestPartial = { root, verdict };
 
     if (verdict.kind === "no-match" || verdict.kind === "partial") paragraphs += verdict.total;
+    if (verdict.kind === "no-match") corpus.push({ root, texts: verdict.texts });
 
     // A broken bundle or an unreachable gateway must not be swallowed as "not found" —
     // that would turn an outage into a false absence claim.
@@ -114,7 +130,7 @@ export async function search(
     };
   }
 
-  return { kind: "absent", query, statements: shortlist.length, paragraphs, capped };
+  return { kind: "absent", query, statements: shortlist.length, paragraphs, capped, corpus };
 }
 
 async function candidates(query: Searchable): Promise<`0x${string}`[]> {

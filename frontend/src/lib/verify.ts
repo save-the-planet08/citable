@@ -42,8 +42,14 @@ export type Verdict =
       full: string;
       via: Provenance;
     }
-  /** Neither. Explicitly not "made up" — see CONCEPT.md section 6. */
-  | { kind: "no-match"; statement: Statement; total: number; via: Provenance }
+  /**
+   * Neither. Explicitly not "made up" — see CONCEPT.md section 6.
+   *
+   * Carries the paragraphs so stage 3 can measure against them without fetching the
+   * bundle a second time. They are safe to pass on: verifyBundle already held every one
+   * of them against the root.
+   */
+  | { kind: "no-match"; statement: Statement; total: number; via: Provenance; texts: string[] }
   | { kind: "unregistered" }
   /** Some source answered, but its bytes do not rebuild the root. Nothing from it is shown. */
   | { kind: "bundle-mismatch"; statement: Statement; detail: string }
@@ -130,7 +136,7 @@ export async function verify(root: `0x${string}`, fragment: string): Promise<Ver
     return { kind: "partial", statement, index: inside, total, full: texts[inside], via };
   }
 
-  return { kind: "no-match", statement, total, via };
+  return { kind: "no-match", statement, total, via, texts };
 }
 
 function message(error: unknown): string {
