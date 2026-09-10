@@ -162,6 +162,16 @@ gebaut. Es soll keinen Dienst geben, dem man vertrauen muss.
 - Nicht registriert ≠ erfunden.
 - Die Namensprüfung ist aus, solange `nameGuard` auf `address(0)` steht.
 - Der Besitzer der Registry kann den Guard wieder abschalten — bekannter zentraler Punkt.
+- Mit gesetztem Guard ist ein ENS-Name Pflicht: `ensNode == bytes32(0)` scheitert an
+  `NotAuthorized`, weil `getOwner(0)` keinen Inhaber kennt. Anonym registrieren geht nur
+  ohne Guard. Kein Test hält das fest — es ist Folge der Guard-Logik, nicht Entwurf.
+- Wird ein Name verkauft, bleiben die Aussagen des alten Inhabers unverändert stehen; der
+  Guard wird nur beim Registrieren gefragt, nie beim Verifizieren. Richtig so, weil die
+  Aussage historisch ist — aber der Verify-Screen zeigt nicht, ob der Name inzwischen den
+  Besitzer gewechselt hat.
+- `setNameGuard` prüft nur, dass an der Adresse Code liegt, nicht dass es ein Guard ist.
+  Ein falscher Contract lässt jede Registrierung reverten, heilbar durch einen zweiten
+  Aufruf.
 - Der Guard deckt eine Registry und nur Namen zweiter Ebene ab; Unternamen sind vertagt.
 - Wer denselben Text zuerst registriert, gewinnt — Front-Running ist dokumentiert, nicht gelöst.
 - Absatzgranularität, nicht Satzgranularität.
