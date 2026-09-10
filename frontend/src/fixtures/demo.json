@@ -1,0 +1,27 @@
+{
+  "bundle": {
+    "version": 1,
+    "model": null,
+    "dim": 0,
+    "segments": [
+      {
+        "index": 0,
+        "text": "Die Behauptung, das Gesetz sei ohne Anhörung beschlossen worden, ist falsch."
+      },
+      {
+        "index": 1,
+        "text": "Am 14. März fand eine öffentliche Anhörung mit siebzehn Sachverständigen statt. Das Protokoll umfasst 240 Seiten und liegt seit dem 20. März öffentlich vor."
+      },
+      {
+        "index": 2,
+        "text": "Richtig ist, dass die Frist zwischen Anhörung und Abstimmung kurz war. Vier Werktage sind wenig für eine Vorlage dieses Umfangs, und wir haben das im Ausschuss auch so gesagt."
+      },
+      {
+        "index": 3,
+        "text": "Wer daraus macht, es habe gar keine Anhörung gegeben, zitiert uns nicht verkürzt, sondern falsch."
+      }
+    ]
+  },
+  "root": "0x68cfc591340c28c279a2dd03aaf2cdc55962b595a20147a6e483b2a46e1fe0e3",
+  "segmentCount": 4
+}

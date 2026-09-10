@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+/* Citable — a verification instrument, not a document.
+ *
+ * The palette comes from archival card stock rather than newsprint cream: cooler, greyer,
+ * the colour of something filed rather than something printed. Three verdict colours that
+ * are deliberately NOT a traffic light — "proven" is not "good", it is *established*, so
+ * it takes the blue of a seal rather than green.
+ *
+ * The three stages also differ in material, not only in hue (CONCEPT.md section 4):
+ *   stage 1  solid fill, a seal        — a fact
+ *   stage 2  outline only              — a fact, but incomplete
+ *   stage 3  hatched, dashed border    — a measurement, and it must never look like proof
+ */
+:root {
+  color-scheme: light;
+
+  --paper: #edeee9;
+  --paper-raised: #f6f7f3;
+  --ink: #16181c;
+  --ink-soft: #5a6067;
+  --ink-faint: #8b9098;
+  --rule: #d3d6ce;
+  --rule-strong: #b6bab0;
+
+  --seal: #1b3a6b;
+  --seal-tint: #dde4ef;
+  --amber: #8a5410;
+  --amber-tint: #f2e7d5;
+  --measure: #614a80;
+  --measure-tint: #e8e2ef;
+  --alarm: #8f2f2f;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-seal: var(--seal);
+  --color-seal-tint: var(--seal-tint);
+  --color-amber: var(--amber);
+  --color-amber-tint: var(--amber-tint);
+  --color-measure: var(--measure);
+  --color-measure-tint: var(--measure-tint);
+  --color-alarm: var(--alarm);
+
+  --font-display: var(--font-display), Georgia, serif;
+  --font-ui: var(--font-ui), system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui), system-ui, sans-serif;
+}
+
+/* The eyebrow labels that carry the apparatus: small, spaced, never shouting. */
+.eyebrow {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Stage 3 only. The hatching is the point: a percentage that looks like a proof does more
+ * damage than no answer at all. */
+.hatched {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    color-mix(in srgb, var(--measure) 12%, transparent) 5px,
+    color-mix(in srgb, var(--measure) 12%, transparent) 6px
+  );
+}
+
+.field {
+  width: 100%;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+  padding: 0.75rem 0.875rem;
+  transition: border-color 120ms ease;
+}
+
+.field:focus {
+  outline: 2px solid var(--seal);
+  outline-offset: -1px;
+  border-color: var(--seal);
+}
+
+.field::placeholder {
+  color: var(--ink-faint);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 260ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
