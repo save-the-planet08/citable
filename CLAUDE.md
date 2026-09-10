@@ -2,8 +2,9 @@
 
 Verifizierbares Publishing-Register mit Positionsbeweis. ETHOnline 2026, Abgabe 16.09.2026.
 
-**Laufendes Kapitel: `REVIEW.md`** — verstehen statt bauen. Kein neuer Code, bis Frederik
-den Stand von `src/` durchhat. Dort steht auch der aktuelle Stand mit Zahlen.
+**Laufendes Kapitel: `NIGHT.md`** — das Produkt fertigbauen. Dort steht der Auftrag, der
+Design-Brief und die Reihenfolge. `REVIEW.md` ist abgeschlossen und dient nur noch als
+Nachschlagewerk zu `src/`.
 
 **Maßgebliche Spezifikation: `CONCEPT.md`** — beide Schichten, mit den Messwerten, auf denen
 die Entscheidungen beruhen. `IDEA.md` ist der erste Entwurf und kennt Schicht 3 nicht; es
@@ -65,12 +66,12 @@ npm test                     # Client-Bibliothek
 
 ## Stand
 
-Arbeitstag 2 (Mi 09.09.). Erledigt: Foundry-Setup, OpenZeppelin v5.7.0, Blattformel mit
+Arbeitstag 3 (Do 10.09.). Erledigt: Foundry-Setup, OpenZeppelin v5.7.0, Blattformel mit
 bewiesener JS/Solidity-Parität, `CitableRegistry` mit Positionsbeweis, Schicht 3 gemessen
 und entschieden (NLI + Wertprüfung statt Ähnlichkeit), Client-Bibliothek `lib/citable/`,
-und die ENS-Schicht.
+die ENS-Schicht, der Deploy auf Sepolia, und der Verify-Screen mit Stufe 1 und 2.
 
-**Tests:** `forge test` 50 grün (55 mit `SEPOLIA_RPC_URL`, dann läuft der Fork-Test mit),
+**Tests:** `forge test` 55 grün (die ENS-Fork-Tests laufen mit, seit `SEPOLIA_RPC_URL` steht),
 `npm test` 43 grün, `forge fmt --check` und `forge build` ohne Warnung.
 
 **ENS-Entscheidung Weg A ist umgesetzt.** Die offene Frage aus BUILD.md 2a ist geklärt:
@@ -115,8 +116,22 @@ Contract bewiesen.
 Nur dieses `owner`-Konto kann je den Guard setzen oder tauschen. `owner` ist `immutable`,
 daran ist nichts mehr zu ändern.
 
-**Als Nächstes:** Frontend, Verify-Screen zuerst. Offen aus `REVIEW.md`: `script/` und
-`test/` überfliegen, vor allem `test/Leaf.t.sol` und `test/ProofBridge.t.sol`.
+**Frontend steht an (Arbeitstag 3).** `frontend/` ist Next.js 16 mit Turbopack, alles
+client-seitig, kein Server. `lib/citable/` wird per Alias importiert, nicht kopiert — eine
+zweite Kopie der Blattformel wäre genau die Drift, gegen die `test/ProofBridge.t.sol`
+existiert. `merkletreejs` braucht `Buffer`, den Browser nicht haben; `src/lib/citable.ts`
+setzt ihn und lädt die Bibliothek danach dynamisch.
+
+Gebaut: Verify-Screen mit Stufe 1 und 2, Suche über den ENS-Namen statt über die Wurzel
+(`ensNode` ist im Event indexed, deshalb reicht ein `getLogs` — kein Indexer, kein
+Subgraph), und die Abwesenheitsaussage mit sichtbarem Nenner.
+
+**Noch nie mit echten Daten gelaufen:** `statementCount()` steht auf 0. Es ist keine
+Aussage registriert, also endet jede Eingabe bei „nicht registriert". Der Rest steht in
+`NIGHT.md`.
+
+**Als Nächstes:** siehe `NIGHT.md`. Offen aus `REVIEW.md`: `script/` und `test/`
+überfliegen, vor allem `test/Leaf.t.sol` und `test/ProofBridge.t.sol`.
 
 `BUILD.md` ist abgearbeitet bis auf den Broadcast und gilt nur noch als Nachweis, was
 beauftragt war.
@@ -128,7 +143,7 @@ es bewiesen.
 
 ## Arbeitsregeln
 
-- **Contracts vor Frontend.** Die sechs Registry-Tests sind grün, bevor Next.js angefasst wird.
+- **Contracts vor Frontend.** Erledigt — die Contracts sind deployt und verifiziert.
 - **Mindestens ein aussagekräftiger Commit pro Arbeitstag.** ETHGlobal kann Einreichungen
   mit einem einzigen großen Commit disqualifizieren.
 - Conventional Commits, Englisch, Imperativ.

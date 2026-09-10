@@ -106,14 +106,20 @@ Honest state of the repository, not a plan.
 | Layer 3 approach measured and chosen | ✅ 3 probe scripts |
 | Deploy path proven on a Sepolia fork | ✅ broadcast + smoke test |
 | Deployment to Sepolia proper | ✅ deployed, verified, guard wired |
-| Frontend | ❌ not yet |
+| Verify screen, stages 1 and 2 | ✅ built, checked against a fixture |
+| Search by ENS name, no indexer | ✅ indexed `ensNode` topic |
+| IPFS read path | ✅ built · ❌ never run against a real CID |
+| IPFS write path (pinning) | ❌ not built |
+| Stage 3 in the browser | ❌ not built |
+| A statement registered on chain | ❌ `statementCount()` is 0 |
+| Video | ❌ not started |
 
 ## Run it
 
 ```bash
 forge install
 npm install          # required: the parity tests shell out to the JS implementation
-forge test           # 50 tests; 5 more when SEPOLIA_RPC_URL is set
+forge test           # 55 tests; 5 of them need SEPOLIA_RPC_URL and skip without it
 npm test             # 43 client library tests
 
 cp .env.example .env # SEPOLIA_RPC_URL enables the ENSv2 fork test
