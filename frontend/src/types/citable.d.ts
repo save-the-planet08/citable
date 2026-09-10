@@ -29,4 +29,11 @@ declare module "@citable/index.mjs" {
   export function buildTree(segments: string[]): Tree;
   export function buildBundle(text: string, vectors?: number[][], model?: string): Bundle;
   export function verifyBundle(bundle: unknown, root: string): boolean;
+
+  /** kubo's default chunk size. Past it a file is a dag-pb tree and cidV1Raw throws. */
+  export const MAX_RAW_BLOCK: number;
+
+  export function cidV1Raw(bytes: Uint8Array): string;
+  export function bundleBytes(bundle: Bundle): Uint8Array;
+  export function bundleCid(bundle: Bundle): string;
 }
