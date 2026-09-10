@@ -105,7 +105,7 @@ Honest state of the repository, not a plan.
 | `ENSv2NameGuard` incl. Sepolia fork test | ✅ 15 + 5 tests |
 | Layer 3 approach measured and chosen | ✅ 3 probe scripts |
 | Deploy path proven on a Sepolia fork | ✅ broadcast + smoke test |
-| Deployment to Sepolia proper | ❌ needs a funded key |
+| Deployment to Sepolia proper | ✅ deployed, verified, guard wired |
 | Frontend | ❌ not yet |
 
 ## Run it
@@ -134,9 +134,12 @@ It deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
 
 | Contract | Sepolia |
 |---|---|
-| `CitableRegistry` | not deployed yet |
-| `ENSv2NameGuard` | not deployed yet |
+| `CitableRegistry` | [`0xD3B137b6c6f572290Cf91ac312319364822792e7`](https://sepolia.etherscan.io/address/0xd3b137b6c6f572290cf91ac312319364822792e7#code) |
+| `ENSv2NameGuard` | [`0x67732407626BCb5D5610887EC97782c610F5E8d2`](https://sepolia.etherscan.io/address/0x67732407626bcb5d5610887ec97782c610f5e8d2#code) |
 | ENSv2 `ETHRegistry` | `0xBDC85dD5b15D7ecb354cd7cb6f2c50b4f2c4F0E2` |
+
+Both are verified on Etherscan. The guard is wired and live, so `registerRoot` requires a
+name in the ENSv2 registry above.
 
 ## Limitations
 

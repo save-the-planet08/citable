@@ -98,12 +98,25 @@ realer Namensinhaber registriert, der Beweis aus `lib/citable/` wird von `verify
 angenommen, an falscher Position abgelehnt, ein Fremder scheitert an `NotAuthorized`. Die
 Artefakte des Forks sind wieder entfernt.
 
-**Als Nächstes:** siehe `REVIEW.md`. Erst `src/` verstehen, dann Broadcast auf das echte
-Sepolia (~0,0053–0,009 ETH, braucht einen finanzierten Schlüssel in `.env`), danach
-Adressen in README und hier eintragen. Dann Frontend, Verify-Screen zuerst.
+**Deployt auf Sepolia** (Arbeitstag 3, Do 10.09.), beide Contracts auf Etherscan verifiziert:
 
-**Vor dem Deploy wissen:** Der Schlüssel wird dauerhaft `owner` der Registry. `owner` ist
-`immutable` — nur dieses Konto kann je den Guard setzen oder tauschen.
+| | |
+|---|---|
+| `CitableRegistry` | `0xD3B137b6c6f572290Cf91ac312319364822792e7` |
+| `ENSv2NameGuard` | `0x67732407626BCb5D5610887EC97782c610F5E8d2` |
+| `owner` (immutable) | `0x5b5Bd6a1523612B67C32D4aDC8b52766d0085D19` |
+
+Der Guard ist verdrahtet und scharf: `nameGuard` zeigt auf den Guard, `PUBLISH_ROLE` ist
+16777216 (`1 << 24`), `REGISTRY` auf die ENSv2-ETHRegistry. Gegengeprüft mit `cast call`
+gegen die Kette, nicht nur aus der Skriptausgabe. `leafOf(3, "Hallo Welt")` liefert on-chain
+denselben Hash wie `script/js/leaf.mjs` — die JS/Solidity-Parität ist damit gegen den echten
+Contract bewiesen.
+
+Nur dieses `owner`-Konto kann je den Guard setzen oder tauschen. `owner` ist `immutable`,
+daran ist nichts mehr zu ändern.
+
+**Als Nächstes:** Frontend, Verify-Screen zuerst. Offen aus `REVIEW.md`: `script/` und
+`test/` überfliegen, vor allem `test/Leaf.t.sol` und `test/ProofBridge.t.sol`.
 
 `BUILD.md` ist abgearbeitet bis auf den Broadcast und gilt nur noch als Nachweis, was
 beauftragt war.
