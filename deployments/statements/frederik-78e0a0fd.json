@@ -1,0 +1,12 @@
+{
+  "root": "0x78e0a0fde36e33e67a915ba7d3b98750911c4a3afa29cb169230eb2814c4e972",
+  "cid": "bafkreichb425wmn3kdiztfniaky66fmyl6i7cmd2xfqrc4ab6s5brpbyqm",
+  "ensNode": "0xae28ce764b8a46fae3ec2984c95bb3bf66836e4959aaaf45679e5cc0d07f50c0",
+  "label": "frederik",
+  "segmentCount": 4,
+  "author": "0x5b5Bd6a1523612B67C32D4aDC8b52766d0085D19",
+  "registry": "0xD3B137b6c6f572290Cf91ac312319364822792e7",
+  "txHash": "0x056e3dc8c157227df996952f2f939352b6a53ac8571141fa30a914a9d44162db",
+  "block": 11682634,
+  "source": "statements/frederik/gettysburg.txt"
+}
