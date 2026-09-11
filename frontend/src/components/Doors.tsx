@@ -47,7 +47,7 @@ export function Doors() {
   }
 
   return (
-    <section className="mt-24 sm:mt-32">
+    <section className="mt-28 sm:mt-36">
       {/* Anchors for the nav, so the browser scrolls here on its own. */}
       <span id="check" className="block scroll-mt-6" />
       <span id="register" className="block scroll-mt-6" />
@@ -93,7 +93,7 @@ export function Doors() {
                 )}
               </span>
               <span
-                className="mt-2 block max-w-[34ch] text-[13.5px] leading-relaxed"
+                className="ui mt-2 block max-w-[34ch] text-[0.875rem] leading-relaxed"
                 style={{ color: open ? "var(--seal-tint)" : "var(--ink-soft)" }}
               >
                 {d.line}

@@ -35,7 +35,7 @@ export function SegmentationPreview({
             style={{ borderColor: "var(--rule)" }}
           >
             <span
-              className="w-6 shrink-0 pt-1 text-right font-mono text-xs tabular-nums"
+              className="ui w-6 shrink-0 pt-1 text-right font-mono text-xs tabular-nums"
               style={{ color: "var(--ink-faint)" }}
             >
               {i + 1}
@@ -45,11 +45,11 @@ export function SegmentationPreview({
         ))}
       </ol>
 
-      <dl className="mt-4 space-y-2 text-xs">
+      <dl className="ui mt-4 space-y-2 text-xs">
         <Line label="Root" value={root} />
         <Line label="CID" value={cid} />
       </dl>
-      <p className="mt-3 max-w-xl text-xs leading-relaxed" style={{ color: "var(--ink-faint)" }}>
+      <p className="ui mt-3 max-w-xl text-xs leading-relaxed" style={{ color: "var(--ink-faint)" }}>
         Change one character and both of these change. That is the point, and it is also why a
         correction is a new registration rather than an edit.
       </p>

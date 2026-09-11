@@ -24,10 +24,10 @@ export function Masthead() {
     >
       <Link href="/" className="flex items-center gap-2.5 text-ink no-underline">
         <Mark />
-        <b className="font-display text-[1.15rem] font-semibold sm:text-[1.3rem]">Citable</b>
+        <b className="font-display text-[1.3rem] font-semibold sm:text-[1.5rem]">Citable</b>
       </Link>
       <nav
-        className="flex gap-4 text-xs sm:gap-7 sm:text-[0.8125rem]"
+        className="ui flex gap-4 text-[0.8125rem] sm:gap-8 sm:text-[0.875rem]"
         style={{ color: "var(--ink-soft)" }}
       >
         <Link href="/#check" className="border-b border-transparent pb-0.5 hover:border-current">

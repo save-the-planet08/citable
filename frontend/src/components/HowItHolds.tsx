@@ -125,9 +125,9 @@ export function HowItHolds() {
   }, []);
 
   return (
-    <section id="how" className="mt-24 scroll-mt-6 sm:mt-32">
+    <section id="how" className="mt-32 scroll-mt-6 sm:mt-40">
       <p className="eyebrow">How a proof holds</p>
-      <h2 className="mt-3 max-w-[22ch] font-display text-[clamp(1.5rem,3vw,2.1rem)] leading-tight text-balance">
+      <h2 className="mt-3 max-w-[22ch] font-display text-[clamp(1.75rem,3.4vw,2.6rem)] leading-[1.08] text-balance">
         Seven paragraphs go in. Thirty-two bytes come out.
       </h2>
 
@@ -190,7 +190,7 @@ export function HowItHolds() {
           </figcaption>
         </figure>
 
-        <div className="space-y-5 text-[15px] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+        <div className="space-y-5 text-[1.0625rem] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
           <p>
             Each paragraph is hashed together with <em>its index</em>, so a leaf says both what
             was written and where. Pairs are hashed into pairs until one value is left. That

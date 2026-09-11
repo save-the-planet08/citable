@@ -36,11 +36,6 @@ export default function Home() {
             </a>{" "}
             on Sepolia, verified on Etherscan.
           </p>
-          <p className="mt-2 max-w-[70ch]">
-            A proof shows that a paragraph stood at a position when the root was registered. It
-            does not show that the statement is true, and a quote that is not found here was
-            not necessarily invented.
-          </p>
         </footer>
       </main>
     </>

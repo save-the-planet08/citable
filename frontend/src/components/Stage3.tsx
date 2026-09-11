@@ -52,7 +52,7 @@ export function Stage3({ corpus, claim }: { corpus: Scanned[]; claim: string }) 
         <h3 className="font-ui text-sm font-semibold tracking-wide uppercase" style={{ color: "var(--measure)" }}>
           Stage 3 · a measurement, not a proof
         </h3>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+        <p className="ui mt-1 max-w-2xl text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
           Word for word, this quote is in none of these {flat.length} paragraphs. It can still be a
           translation or a paraphrase. Stage 3 measures whether the claim is <em>covered</em> by a
           paragraph — and it can be wrong.
@@ -63,7 +63,7 @@ export function Stage3({ corpus, claim }: { corpus: Scanned[]; claim: string }) 
         {!result && !running && (
           <button
             onClick={measure}
-            className="border px-6 py-3 text-sm font-medium tracking-wide"
+            className="ui border px-6 py-3 text-sm font-medium tracking-wide"
             style={{ borderColor: "var(--measure)", color: "var(--measure)" }}
           >
             Measure coverage
@@ -71,7 +71,7 @@ export function Stage3({ corpus, claim }: { corpus: Scanned[]; claim: string }) 
         )}
 
         {!result && !running && (
-          <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--ink-faint)" }}>
+          <p className="ui mt-3 text-xs leading-relaxed" style={{ color: "var(--ink-faint)" }}>
             Downloads about 400 MB of models the first time and runs them in your browser. Nothing
             is uploaded. Nothing was downloaded before you asked.
           </p>
@@ -80,7 +80,7 @@ export function Stage3({ corpus, claim }: { corpus: Scanned[]; claim: string }) 
         {running && <Meter progress={progress} />}
 
         {error && (
-          <p className="mt-4 text-sm" style={{ color: "var(--alarm)" }}>
+          <p className="ui mt-4 text-sm" style={{ color: "var(--alarm)" }}>
             The measurement did not run: {error}
           </p>
         )}
@@ -108,7 +108,7 @@ function Meter({ progress }: { progress: Progress | null }) {
           style={{ width: pct === null ? "20%" : `${pct}%`, background: "var(--measure)" }}
         />
       </div>
-      <p className="mt-2 font-mono text-xs" style={{ color: "var(--ink-faint)" }}>
+      <p className="ui mt-2 font-mono text-xs" style={{ color: "var(--ink-faint)" }}>
         {progress?.detail ?? ""} {pct !== null && `· ${pct}%`}
       </p>
     </div>
@@ -129,7 +129,7 @@ function Measurement({
     return (
       <div className="rise">
         <Claim>Not measured. The quote asserts something the text never says.</Claim>
-        <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+        <p className="ui mt-3 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
           The closest paragraph does not mention{" "}
           {result.blocked.map(describeToken).join(", ")}. A value the text never states cannot be
           covered by it, however alike the two read — so no model was asked.
@@ -151,7 +151,7 @@ function Measurement({
           : `Paragraph ${where.index + 1} of ${where.total} is about the same thing but does not cover the claim (${percent} %).`}
       </Claim>
 
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+      <p className="ui mt-3 max-w-2xl text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
         {percent} % does <strong>not</strong> mean &ldquo;{percent} % true&rdquo;. It means: in the
         16-case test set behind this threshold, no distorted quote reached this value. Sixteen cases
         are a signal, not a validation, and Spanish is measurably weaker than English.
@@ -159,7 +159,7 @@ function Measurement({
 
       <Paragraph text={where.text} index={where.index} total={where.total} />
 
-      <dl className="mt-6 space-y-2 border-t pt-4 text-xs" style={{ borderColor: "var(--rule)" }}>
+      <dl className="ui mt-6 space-y-2 border-t pt-4 text-xs" style={{ borderColor: "var(--rule)" }}>
         <Row label="Coverage" value={`${best.entail.toFixed(4)} entailment · threshold ${THRESHOLD}`} />
         <Row label="Contradiction" value={best.contra.toFixed(4)} />
         <Row label="Models" value={`${EMBED_MODEL} → ${NLI_MODEL}`} />

@@ -7,9 +7,9 @@
  */
 export function Idea() {
   return (
-    <section className="mt-24 sm:mt-32">
+    <section className="mt-28 sm:mt-36">
       <p className="eyebrow">The idea</p>
-      <h2 className="mt-3 max-w-[20ch] font-display text-[clamp(1.6rem,3.2vw,2.5rem)] leading-[1.1] tracking-[-0.01em]">
+      <h2 className="mt-3 max-w-[20ch] font-display text-[clamp(1.9rem,3.8vw,2.9rem)] leading-[1.06]">
         Not{" "}
         <em className="font-normal italic" style={{ color: "var(--ink-soft)" }}>
           is this quote real?
@@ -21,7 +21,7 @@ export function Idea() {
 
       <div className="mt-8 grid gap-x-14 gap-y-6 sm:grid-cols-2">
         <p
-          className="max-w-[52ch] text-[15px] leading-relaxed"
+          className="max-w-[52ch] text-[1.0625rem] leading-relaxed"
           style={{ color: "var(--ink-soft)" }}
         >
           Nobody can prove a sentence was never said. The denominator is
@@ -30,7 +30,7 @@ export function Idea() {
           doubting.
         </p>
         <p
-          className="max-w-[52ch] text-[15px] leading-relaxed"
+          className="max-w-[52ch] text-[1.0625rem] leading-relaxed"
           style={{ color: "var(--ink-soft)" }}
         >
           A statement is split at its blank lines. Every paragraph is bound to
@@ -48,7 +48,7 @@ export function Idea() {
         style={{ borderColor: "var(--rule)" }}
       >
         <p
-          className="max-w-[70ch] text-[13.5px] leading-relaxed"
+          className="max-w-[70ch] text-[0.9375rem] leading-relaxed"
           style={{ color: "var(--ink-faint)" }}
         >
           No database, no server, no indexer. The text sits on IPFS, the tree is

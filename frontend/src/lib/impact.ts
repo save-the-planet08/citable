@@ -4,10 +4,13 @@ import { MISQUOTES } from "./misquotes";
  * The hero scene: a wall of fabricated quotation cards, a measurement thrown through it,
  * and the one paragraph that can be checked left standing.
  *
- * Driven by scroll position, not by a clock. Every shard, dot and note is a pure function
- * of one number between 0 and 1, which is what makes the whole thing reversible — scroll
- * back up and the cards reassemble, so a reader who wants to read a refutation again can
- * simply go back to it. Nothing here fires and forgets.
+ * Everything is a pure function of one number between 0 and 1. The caller decides what
+ * feeds it — a clock here, and the scene runs again from the top whenever the hero comes
+ * back into view, so a refutation that went past too quickly can be watched a second time.
+ *
+ * It is paced for reading, not for showing off: roughly eight hundred milliseconds between
+ * one card breaking and the next, which is about as long as it takes to read the line the
+ * break leaves behind.
  *
  * Drawn rather than fetched. The shards are cut out of the cards themselves — each piece is
  * a clipped clone of the card it came from, which is why the text stays readable as it
@@ -45,27 +48,29 @@ const RECORD = {
 
 const WIDE: Layout = {
   axis: "x",
-  vb: [1400, 560],
-  quote: 17,
-  who: 11,
+  // Wide and shallow on purpose: the space left under the headline is a letterbox, and a
+  // squarer drawing would be scaled down to fit its height and waste the width.
+  vb: [1400, 460],
+  quote: 18,
+  who: 11.5,
   pad: 22,
-  cardLead: 20,
+  cardLead: 21,
   use: [0, 1, 2, 3, 4],
   cards: [
-    { x: 20, y: 56, w: 320, h: 178, rot: -2.2 },
-    { x: 280, y: 388, w: 280, h: 128, rot: 2.6 },
-    { x: 500, y: 26, w: 320, h: 186, rot: -1.4 },
-    { x: 770, y: 398, w: 260, h: 118, rot: 3.2 },
-    { x: 990, y: 74, w: 320, h: 176, rot: -2.8 },
+    { x: 20, y: 34, w: 330, h: 186, rot: -2.2 },
+    { x: 280, y: 292, w: 292, h: 134, rot: 2.6 },
+    { x: 500, y: 14, w: 330, h: 194, rot: -1.4 },
+    { x: 770, y: 300, w: 272, h: 124, rot: 3.2 },
+    { x: 990, y: 46, w: 330, h: 184, rot: -2.8 },
   ],
-  record: { x: 420, y: 155, w: 520, h: 252, size: 21, lead: 30 },
+  record: { x: 420, y: 104, w: 540, h: 258, size: 22, lead: 31 },
   recLines: [
     "“…government of the people, by the",
     "people, for the people, shall not",
     "perish from the earth.”",
   ],
-  num: { size: 250, from: -520, to: 1620, along: 286, lead: 96 },
-  still: { x: 165, y: 300 },
+  num: { size: 230, from: -520, to: 1620, along: 232, lead: 96 },
+  still: { x: 168, y: 248 },
   burst: 470,
 };
 
@@ -101,14 +106,21 @@ const NARROW: Layout = {
  *   sweep   the figure crosses and the cards come apart in turn
  *   settle  the wreckage clears
  *   record  what can be checked rises, and is stamped */
-const REST_END = 0.06;
-const SWEEP_END = 0.72;
-const RECORD_START = 0.72;
-const RECORD_END = 0.88;
-const STAMP_START = 0.87;
-const STAMP_END = 0.96;
-/* Past STAMP_END the scene is finished and the pin simply holds it, so the last thing a
-   reader sees before the page moves on is the record, not a half-played animation. */
+const REST_END = 0.09;
+const SWEEP_END = 0.8;
+/* The reasons clear the field before the record enters it, rather than cross-fading
+   through it — two things in the same place at half opacity is neither of them. */
+const NOTES_OUT = [0.82, 0.86] as const;
+const RECORD_START = 0.86;
+const RECORD_END = 0.96;
+const STAMP_START = 0.96;
+const STAMP_END = 1;
+
+/* Between SWEEP_END and RECORD_START all five refutations stand together, which is the
+   one frame where the whole indictment is readable at once. It is held on purpose. */
+
+/** How long the whole thing takes. Slow on purpose — every beat has a line to read. */
+export const IMPACT_MS = 9000;
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const span = (v: number, a: number, b: number) => clamp01((v - a) / (b - a));
@@ -299,7 +311,7 @@ export function mountImpact(svg: SVGSVGElement): Impact {
       /* what the destruction is for: the reason, where the card stood */
       const note = el("text", {
         x: box.x, y: box.y + box.h / 2, opacity: 0, fill: "var(--alarm)",
-        "font-family": "var(--font-ui)", "font-size": 13, "font-weight": 500,
+        "font-family": "var(--font-ui)", "font-size": 16, "font-weight": 500,
       });
       note.textContent = fact.debunk;
       burst.append(note);
@@ -321,7 +333,7 @@ export function mountImpact(svg: SVGSVGElement): Impact {
 
     const label = el("text", {
       x: R.x + P, y: R.y + 36, fill: "var(--ink-faint)",
-      "font-family": "var(--font-ui)", "font-size": 10, "letter-spacing": "0.14em",
+      "font-family": "var(--font-ui)", "font-size": 11, "letter-spacing": "0.14em",
     });
     label.textContent = "REGISTERED STATEMENT · SEPOLIA";
     rec.append(label);
@@ -332,7 +344,7 @@ export function mountImpact(svg: SVGSVGElement): Impact {
 
     const meta = el("text", {
       x: R.x + P, y: R.y + R.h - 52, fill: "var(--ink-soft)",
-      "font-family": "var(--font-mono)", "font-size": 10.5,
+      "font-family": "var(--font-mono)", "font-size": 11.5,
     });
     meta.textContent = `${RECORD.root} · ${RECORD.name}`;
     rec.append(meta);
@@ -342,7 +354,7 @@ export function mountImpact(svg: SVGSVGElement): Impact {
        the claim this project refuses to make. */
     const caveat = el("text", {
       x: R.x + P, y: R.y + R.h - 24, fill: "var(--ink-faint)",
-      "font-family": "var(--font-ui)", "font-size": 10,
+      "font-family": "var(--font-ui)", "font-size": 11.5,
     });
     caveat.textContent = "Proves the paragraph and its place — not that Lincoln said it.";
     rec.append(caveat);
@@ -445,6 +457,7 @@ export function mountImpact(svg: SVGSVGElement): Impact {
       num.setAttribute("opacity", t <= 0 ? "0" : String(1 - leaving));
       shock.setAttribute("opacity", t <= 0 || t >= 1 ? "0" : String((0.5 - t * 0.4) * (1 - leaving)));
 
+      const clearing = span(p, NOTES_OUT[0], NOTES_OUT[1]);
       const rise = span(p, RECORD_START, RECORD_END);
 
       cards.forEach((card) => {
@@ -467,9 +480,8 @@ export function mountImpact(svg: SVGSVGElement): Impact {
           });
         }
 
-        // The reason stays up until the record takes the field, so it can be scrolled
-        // back to and read again.
-        card.note.setAttribute("opacity", String(span(c, 0.04, 0.2) * (1 - rise)));
+        // The reason stays up until the field is cleared for the record.
+        card.note.setAttribute("opacity", String(span(c, 0.04, 0.2) * (1 - clearing)));
       });
 
       rec.setAttribute("opacity", String(rise));

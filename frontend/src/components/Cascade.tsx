@@ -19,22 +19,17 @@
  */
 export function Cascade() {
   return (
-    <section className="mt-28 sm:mt-36">
+    <section className="mt-32 sm:mt-40">
       <p className="eyebrow">What an answer can be</p>
-      <h2 className="mt-3 max-w-[24ch] font-display text-[clamp(1.5rem,3vw,2.1rem)] leading-tight text-balance">
+      <h2 className="mt-3 max-w-[24ch] font-display text-[clamp(1.75rem,3.4vw,2.6rem)] leading-[1.08] text-balance">
         Three answers, and only two of them are facts.
       </h2>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <p className="text-[15px] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          <p className="text-[1.0625rem] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
             A quote is checked in one direction only: word for word first, and the softer
             tests come after, each one weaker and each one labelled as such.
-          </p>
-          <p className="mt-4 text-[15px] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
-            Nothing here upgrades a guess into a proof. The screen never shows a percentage
-            that looks like a seal, because a percentage that looks like a seal does more
-            damage than no answer at all.
           </p>
         </div>
 

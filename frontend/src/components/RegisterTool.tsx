@@ -153,7 +153,7 @@ export function RegisterTool() {
 
   return (
     <div>
-      <p className="max-w-[58ch] text-[15px] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+      <p className="max-w-[58ch] text-[1.0625rem] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
         The text is split into paragraphs here, in this tab. Each paragraph is bound to its
         position, and only the root of that tree goes on chain — 32 bytes. The words never
         touch a server of ours, because there is no server of ours.
@@ -168,7 +168,7 @@ export function RegisterTool() {
           onChange={(e) => setText(e.target.value)}
         />
         {buildError && (
-          <p className="mt-2 text-sm" style={{ color: "var(--alarm)" }}>
+          <p className="ui mt-2 text-sm" style={{ color: "var(--alarm)" }}>
             {buildError}
           </p>
         )}
@@ -189,7 +189,7 @@ export function RegisterTool() {
           autoComplete="off"
         />
         {ensNode && (
-          <p className="mt-2 font-mono text-xs break-all" style={{ color: "var(--ink-faint)" }}>
+          <p className="ui mt-2 font-mono text-xs break-all" style={{ color: "var(--ink-faint)" }}>
             ensNode {ensNode}
           </p>
         )}
@@ -201,7 +201,7 @@ export function RegisterTool() {
         title="Keep the bundle"
         note="The CID goes on chain. The bytes do not — somebody has to serve them."
       >
-        <p className="max-w-xl text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+        <p className="ui max-w-xl text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
           This page has no pinning key and does not upload. Download the bundle and pin it —
           any IPFS node or pinning service will do, and the CID is the same everywhere because
           it is the hash of these exact bytes. Register without it and you have put a dead link
@@ -210,7 +210,7 @@ export function RegisterTool() {
         <button
           onClick={download}
           disabled={!built}
-          className="mt-4 border px-6 py-3 text-sm font-medium tracking-wide disabled:opacity-35"
+          className="ui mt-4 border px-6 py-3 text-sm font-medium tracking-wide disabled:opacity-35"
           style={{ borderColor: "var(--seal)", color: "var(--seal)" }}
         >
           {kept ? "Downloaded ✓ — download again" : "Download the bundle"}
@@ -219,21 +219,21 @@ export function RegisterTool() {
 
       <Step n={4} title="Register" note="One transaction on Sepolia.">
         {!hasWallet() && (
-          <p className="text-sm" style={{ color: "var(--amber)" }}>
+          <p className="ui text-sm" style={{ color: "var(--amber)" }}>
             No wallet in this browser. MetaMask or Rabby will do.
           </p>
         )}
         {hasWallet() && !address && (
           <button
             onClick={connectWallet}
-            className="border px-6 py-3 text-sm font-medium tracking-wide"
+            className="ui border px-6 py-3 text-sm font-medium tracking-wide"
             style={{ borderColor: "var(--seal)", color: "var(--seal)" }}
           >
             Connect a wallet
           </button>
         )}
         {address && (
-          <p className="font-mono text-xs break-all" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui font-mono text-xs break-all" style={{ color: "var(--ink-soft)" }}>
             {address}
           </p>
         )}
@@ -241,20 +241,20 @@ export function RegisterTool() {
         <button
           onClick={register}
           disabled={!ready}
-          className="mt-5 px-7 py-3 text-sm font-medium tracking-wide disabled:cursor-not-allowed disabled:opacity-35"
+          className="ui mt-5 px-7 py-3 text-sm font-medium tracking-wide disabled:cursor-not-allowed disabled:opacity-35"
           style={{ background: "var(--seal)", color: "var(--paper-raised)" }}
         >
           {stage === "sending" ? "Waiting for the chain…" : "Register on Sepolia"}
         </button>
 
         {!ready && stage === "idle" && (
-          <p className="mt-3 text-xs" style={{ color: "var(--ink-faint)" }}>
+          <p className="ui mt-3 text-xs" style={{ color: "var(--ink-faint)" }}>
             {missing({ built, ensNode, address, kept })}
           </p>
         )}
 
         {error && (
-          <p className="mt-4 max-w-xl text-sm leading-relaxed" style={{ color: "var(--alarm)" }}>
+          <p className="ui mt-4 max-w-xl text-sm leading-relaxed" style={{ color: "var(--alarm)" }}>
             {error}
           </p>
         )}
@@ -268,7 +268,7 @@ export function RegisterTool() {
 function Permission({ permission }: { permission: { allowed: boolean; guard: Address } }) {
   if (permission.guard === "0x0000000000000000000000000000000000000000") {
     return (
-      <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--amber)" }}>
+      <p className="ui mt-3 text-sm leading-relaxed" style={{ color: "var(--amber)" }}>
         The name check is switched off on this registry. Anyone can claim any name right now,
         so a name recorded today is unbacked metadata.
       </p>
@@ -276,7 +276,7 @@ function Permission({ permission }: { permission: { allowed: boolean; guard: Add
   }
   return (
     <p
-      className="mt-3 text-sm leading-relaxed"
+      className="ui mt-3 text-sm leading-relaxed"
       style={{ color: permission.allowed ? "var(--seal)" : "var(--alarm)" }}
     >
       {permission.allowed
@@ -301,11 +301,11 @@ function Registered({
       style={{ borderColor: "var(--seal)", background: "var(--seal-tint)" }}
     >
       <p className="font-display text-lg">On the record.</p>
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+      <p className="ui mt-2 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
         Every paragraph of this statement can now be proven to have stood where it stands, at
         this moment, under this name.
       </p>
-      <dl className="mt-5 space-y-2 text-xs">
+      <dl className="ui mt-5 space-y-2 text-xs">
         <div className="flex flex-wrap gap-x-4">
           <dt className="eyebrow w-24 shrink-0">Root</dt>
           <dd className="min-w-0 flex-1 font-mono break-all">{root}</dd>
@@ -328,7 +328,7 @@ function Registered({
       </dl>
       <a
         href="#check"
-        className="mt-5 inline-block text-sm underline underline-offset-2"
+        className="ui mt-5 inline-block text-sm underline underline-offset-2"
         style={{ color: "var(--seal)" }}
       >
         Check a quote from {label.trim() || "this statement"} →
@@ -351,12 +351,12 @@ function Step({
   return (
     <section className="mt-10 border-t pt-7" style={{ borderColor: "var(--rule)" }}>
       <div className="flex items-baseline gap-3">
-        <span className="font-mono text-sm" style={{ color: "var(--ink-faint)" }}>
+        <span className="ui font-mono text-sm" style={{ color: "var(--ink-faint)" }}>
           {n}
         </span>
         <h2 className="font-display text-xl">{title}</h2>
       </div>
-      <p className="mt-1 mb-4 ml-7 text-sm" style={{ color: "var(--ink-faint)" }}>
+      <p className="ui mt-1 mb-4 ml-7 text-sm" style={{ color: "var(--ink-faint)" }}>
         {note}
       </p>
       <div className="ml-7">{children}</div>

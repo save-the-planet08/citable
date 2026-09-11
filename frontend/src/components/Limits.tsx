@@ -38,23 +38,31 @@ const LIMITS: [string, string][] = [
 
 export function Limits() {
   return (
-    <section className="mt-28 sm:mt-36">
+    <section className="mt-32 sm:mt-44">
       <p className="eyebrow">What this cannot do</p>
-      <h2 className="mt-3 max-w-[26ch] font-display text-[clamp(1.5rem,3vw,2.1rem)] leading-tight text-balance">
+      <h2 className="mt-4 max-w-[26ch] font-display text-[clamp(1.75rem,3.4vw,2.6rem)] leading-[1.08] text-balance">
         The limits are part of the instrument.
       </h2>
-      <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
-        A measuring instrument that hides its error bars is not a measuring instrument. These
-        are in the README and in the video too.
+      <p className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+        A measuring instrument that hides its error bars is not a measuring instrument.
       </p>
 
-      <dl className="mt-10 grid gap-x-12 gap-y-8 sm:grid-cols-2">
+      {/* Set as a definition list, not a grid of cards: six equal boxes read as a feature
+          table, and this is the opposite of a feature table. */}
+      <dl className="mt-12">
         {LIMITS.map(([title, body]) => (
-          <div key={title} className="border-t pt-4" style={{ borderColor: "var(--rule)" }}>
-            <dt className="font-display text-base" style={{ color: "var(--ink)" }}>
+          <div
+            key={title}
+            className="grid gap-y-2 border-t py-6 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.65fr)] sm:gap-x-12"
+            style={{ borderColor: "var(--rule)" }}
+          >
+            <dt className="font-display text-[1.2rem] leading-snug" style={{ color: "var(--ink)" }}>
               {title}
             </dt>
-            <dd className="mt-2 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+            <dd
+              className="max-w-[62ch] text-[1.0625rem] leading-relaxed"
+              style={{ color: "var(--ink-soft)" }}
+            >
               {body}
             </dd>
           </div>

@@ -56,17 +56,40 @@
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-ui), system-ui, sans-serif;
+  /* The page is a thing to read, so the reading face is the default and the sans is the
+   * exception — the reverse of how an app is usually set. */
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+@media (min-width: 640px) {
+  body {
+    font-size: 18px;
+  }
+}
+
+/* Fraunces sets a touch wide at text sizes; the optical axis handles the rest. */
+h1,
+h2,
+h3 {
+  font-variation-settings: "opsz" 60;
+  letter-spacing: -0.015em;
 }
 
 /* The eyebrow labels that carry the apparatus: small, spaced, never shouting. */
 .eyebrow {
   font-family: var(--font-ui), system-ui, sans-serif;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+/* Buttons, labels, captions: the apparatus, never the argument. */
+.ui {
+  font-family: var(--font-ui), system-ui, sans-serif;
 }
 
 /* Stage 3 only. The hatching is the point: a percentage that looks like a proof does more
@@ -83,6 +106,7 @@ body {
 
 .field {
   width: 100%;
+  font-family: var(--font-ui), system-ui, sans-serif;
   background: var(--paper-raised);
   border: 1px solid var(--rule-strong);
   color: var(--ink);

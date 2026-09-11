@@ -44,7 +44,7 @@ export function CheckTool() {
 
   return (
     <div>
-      <p className="max-w-[58ch] text-[15px] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+      <p className="max-w-[58ch] text-[1.0625rem] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
         Citable walks every statement that name has registered, rebuilds each text from its
         bundle, and asks the contract which paragraph the quote was — and where it stood. All
         of it in this tab.
@@ -62,7 +62,7 @@ export function CheckTool() {
             autoComplete="off"
           />
         </label>
-        <p className="mt-2 text-xs" style={{ color: "var(--ink-faint)" }}>
+        <p className="ui mt-2 text-xs" style={{ color: "var(--ink-faint)" }}>
           {query?.kind === "root"
             ? "Reading as a statement root."
             : query?.kind === "author"
@@ -85,7 +85,7 @@ export function CheckTool() {
           <button
             type="submit"
             disabled={!ready || checking}
-            className="px-7 py-3 text-sm font-medium tracking-wide transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
+            className="ui px-7 py-3 text-sm font-medium tracking-wide transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
             style={{ background: "var(--seal)", color: "var(--paper-raised)" }}
           >
             {checking ? "Checking…" : "Check this quote"}
@@ -93,13 +93,13 @@ export function CheckTool() {
           <button
             type="button"
             onClick={tryIt}
-            className="text-sm underline underline-offset-4"
+            className="ui text-sm underline underline-offset-4"
             style={{ color: "var(--ink-soft)" }}
           >
             Use a quote that is registered
           </button>
         </div>
-        <p className="mt-3 text-xs" style={{ color: "var(--ink-faint)" }}>
+        <p className="ui mt-3 text-xs" style={{ color: "var(--ink-faint)" }}>
           {progress && progress.total > 0
             ? `Statement ${progress.done + 1} of ${progress.total}…`
             : "Everything runs in your browser. Nothing is sent to a server."}

@@ -29,7 +29,7 @@ export function ResultPanel({ result, claim }: { result: SearchResult; claim: st
           label="Nothing registered"
           claim={`${describeQuery(result.query)} has not registered any statement here.`}
         >
-          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
             Citable can only speak about what it holds. An empty registry says nothing about
             what was or was not said.
           </p>
@@ -50,12 +50,12 @@ export function ResultPanel({ result, claim }: { result: SearchResult; claim: st
             <Stat value={String(result.statements)} label="statements searched" />
             <Stat value={String(result.paragraphs)} label="paragraphs compared" />
           </dl>
-          <p className="mt-6 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui mt-6 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
             That is a statement about this registry, not about the world. The words may well
             have been said somewhere Citable does not hold. Not registered is not invented.
           </p>
           {result.capped && (
-            <p className="mt-3 text-sm" style={{ color: "var(--amber)" }}>
+            <p className="ui mt-3 text-sm" style={{ color: "var(--amber)" }}>
               Only the {result.statements} most recent statements were checked. There are
               more, so this count is a floor, not the full denominator.
             </p>
@@ -68,7 +68,7 @@ export function ResultPanel({ result, claim }: { result: SearchResult; claim: st
     case "error":
       return (
         <Panel tone="alarm" label="Could not check" claim={result.message}>
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui text-sm" style={{ color: "var(--ink-soft)" }}>
             Nothing was proven and nothing was disproven.
           </p>
         </Panel>
@@ -130,7 +130,7 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
           >
             {verdict.full}
           </blockquote>
-          <p className="mt-4 text-sm" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui mt-4 text-sm" style={{ color: "var(--ink-soft)" }}>
             A shortened quote can be accurate and still mislead. The rest of the paragraph is
             the context that was left out.
           </p>
@@ -145,7 +145,7 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
           label="No match"
           claim={`The fragment does not appear in any of the ${verdict.total} paragraphs of this statement.`}
         >
-          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
             That says nothing about whether the words were said. It says they are not in{" "}
             <em>this</em> statement. Not registered is not the same as invented.
           </p>
@@ -156,7 +156,7 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
     case "unregistered":
       return (
         <Panel tone="plain" label="Not registered" claim="No statement exists under this root.">
-          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
             Check the root, or the statement was never registered. Citable can only speak
             about statements it holds.
           </p>
@@ -170,13 +170,13 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
           label="Bundle does not match"
           claim="The content behind the CID does not rebuild this root."
         >
-          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
             Nothing from that bundle is shown, because nothing in it is anchored to the
             statement. Either the file was swapped after registration, or the CID points
             somewhere else entirely.
           </p>
           <pre
-            className="mt-4 overflow-x-auto border p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap"
+            className="ui mt-4 overflow-x-auto border p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap"
             style={{ borderColor: "var(--rule)", color: "var(--ink-soft)" }}
           >
             {verdict.detail}
@@ -188,7 +188,7 @@ export function VerdictPanel({ verdict }: { verdict: Verdict }) {
     case "error":
       return (
         <Panel tone="alarm" label="Could not check" claim={verdict.message}>
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+          <p className="ui text-sm" style={{ color: "var(--ink-soft)" }}>
             Nothing was proven and nothing was disproven.
           </p>
         </Panel>
@@ -260,7 +260,7 @@ function Apparatus({
   const registered = new Date(Number(statement.timestamp) * 1000);
   return (
     <dl
-      className="mt-8 border-t pt-5 text-sm space-y-2"
+      className="ui mt-8 border-t pt-5 text-sm space-y-2"
       style={{ borderColor: "var(--rule)" }}
     >
       <Row label="Registered" value={registered.toISOString().slice(0, 10)} />
