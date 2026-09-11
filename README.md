@@ -98,7 +98,7 @@ Honest state of the repository, not a plan.
 |---|---|
 | Leaf hashing, JS ↔ Solidity parity proven | ✅ 6 tests |
 | `CitableRegistry` with position proofs | ✅ 13 tests |
-| Client library (segment, tree, bundle) | ✅ 43 JS tests |
+| Client library (segment, tree, bundle, CID, guards) | ✅ 60 JS tests |
 | JS-built proofs accepted by the contract | ✅ 4 tests |
 | ENSv2 token id derivation resolved | ✅ `script/js/ens-probe.mjs` |
 | `INameGuard` gate on `registerRoot` | ✅ 12 tests |
@@ -106,12 +106,15 @@ Honest state of the repository, not a plan.
 | Layer 3 approach measured and chosen | ✅ 3 probe scripts |
 | Deploy path proven on a Sepolia fork | ✅ broadcast + smoke test |
 | Deployment to Sepolia proper | ✅ deployed, verified, guard wired |
-| Verify screen, stages 1 and 2 | ✅ built, checked against a fixture |
+| Verify screen, stages 1 and 2 | ✅ run against the live registry |
 | Search by ENS name, no indexer | ✅ indexed `ensNode` topic |
-| IPFS read path | ✅ built · ❌ never run against a real CID |
-| IPFS write path (pinning) | ❌ not built |
-| Stage 3 in the browser | ❌ not built |
-| A statement registered on chain | ❌ `statementCount()` is 0 |
+| CID computed without kubo | ✅ 7 tests against kubo's own vectors |
+| IPFS write path | ✅ `script/js/publish.mjs`, round trip proven |
+| A real ENSv2 name on Sepolia | ✅ `wochenzeitung.eth`, guard stayed armed |
+| Statements registered on chain | ✅ 2, both under that name |
+| Pinning to a service | ❌ needs a Pinata account — one env var |
+| Stage 3 in the browser | 🚧 built, being run in a browser now |
+| Register screen | ❌ not built |
 | Video | ❌ not started |
 
 ## Run it
@@ -120,7 +123,7 @@ Honest state of the repository, not a plan.
 forge install
 npm install          # required: the parity tests shell out to the JS implementation
 forge test           # 55 tests; 5 of them need SEPOLIA_RPC_URL and skip without it
-npm test             # 43 client library tests
+npm test             # 60 client library tests
 
 cp .env.example .env # SEPOLIA_RPC_URL enables the ENSv2 fork test
 node script/js/ens-probe.mjs          # ENSv2 reachability and token id derivation
@@ -147,6 +150,66 @@ It deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
 Both are verified on Etherscan. The guard is wired and live, so `registerRoot` requires a
 name in the ENSv2 registry above.
 
+## Publish a statement
+
+```bash
+node script/js/ens-register.mjs <label> --broadcast          # get a real ENSv2 name
+node script/js/publish.mjs <textfile> --name=<label>          # simulate the whole path
+node script/js/publish.mjs <textfile> --name=<label> --broadcast
+```
+
+`publish.mjs` refuses to send anything until three things hold: the CID this repo computes
+equals the CID `kubo` computes, the bytes read back out of IPFS rebuild the root, and the
+deployed contract accepts a proof at the right index while refusing the same segment at
+another. It writes the source text into `statements/`, a record into
+`deployments/statements/`, and a copy of the bundle into `frontend/public/bundles/`.
+
+Registered on Sepolia so far, both under `wochenzeitung.eth` and both with the name guard
+armed:
+
+| Statement | Root | Paragraphs |
+|---|---|---|
+| `statements/wochenzeitung/anhoerung.txt` | `0xa2ea6730…891ebc4b` | 7 |
+| `statements/wochenzeitung/quartalszahlen.txt` | `0x2690f5f5…33b45caf` | 6 |
+
+## Where the bundle actually lives
+
+The CID on chain is the hash of the bundle's bytes, so it is real the moment it is
+computed — but a CID nothing serves is a dead link. Three sources are tried at once and the
+first whose bytes **rebuild the root** wins; a source serving anything else loses the race
+rather than being believed. Because of that anchor, where a bundle came from costs nothing
+in trust, and the screen names the source it used.
+
+| Source | Configuration |
+|---|---|
+| Public gateways | `NEXT_PUBLIC_IPFS_GATEWAYS`, comma separated. Defaults to w3s.link and ipfs.io. |
+| A pinning service | Set `PINATA_JWT` in `.env` and `publish.mjs` pins there too. Nothing else changes. |
+| This app's own copy | `frontend/public/bundles/<cid>.json`, written on every publish. Last in the race, and labelled as such on screen. |
+
+Right now the third one is doing the work: no pinning service is configured, so no public
+gateway holds these CIDs. That is a deployment gap, not a design gap — one environment
+variable closes it.
+
+## The frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+| | |
+|---|---|
+| `NEXT_PUBLIC_SEPOLIA_RPC_URL` | Optional. Without it viem uses a public Sepolia endpoint, which is rate limited. |
+| `NEXT_PUBLIC_IPFS_GATEWAYS` | Optional. Comma-separated gateway prefixes, tried before the local copy. |
+
+Everything is client-side; there is no server component and no API route. `lib/citable/` is
+imported through an alias, never copied — a second copy of the leaf formula is exactly the
+drift `test/ProofBridge.t.sol` exists to prevent.
+
+Stage 3 downloads about 400 MB of models on first use and only when asked. Nothing is
+uploaded, and nothing is downloaded before the button is pressed.
+
 ## Limitations
 
 - **Stage 3 is a measurement, not a proof.** It can be wrong, and it is labelled as such.
@@ -172,6 +235,18 @@ name in the ENSv2 registry above.
   interface must read "paragraph i of n" from the bundle, never from the chain.
 - **The root does not cover the vectors.** It commits to index and text. The vectors are
   bound to the bundle by its CID, and the CID is on chain — but see the next point.
+- **The registered bundles carry no vectors, so stage 3 embeds at query time.** It is not a
+  gap in the argument: the paragraphs it embeds were already held against the root, and a
+  client that computes them itself with a named model has to trust the publisher's numbers
+  even less than CONCEPT.md 3 assumes. What it costs is time, not trust — the browser
+  already has the embedding model loaded to embed the query.
+- **The register screen does not pin.** It has no key and uploads nothing, so it makes the
+  author download the bundle and refuses to offer the transaction until they have. An
+  author who registers without keeping the bytes has put a dead link on chain.
+- **No public gateway currently serves these CIDs.** Nothing is pinned to a service yet, so
+  the bundles are reachable through the copy the app ships. That copy is held to the root
+  like any other source and is named on screen — but it is availability standing on one
+  origin, which is precisely what IPFS was chosen to avoid.
 - **The contract cannot check that the CID matches the root.** It never sees the text. A
   mismatch makes the statement unverifiable, so lying only hurts the author.
 - Paragraph granularity, not sentence granularity.
