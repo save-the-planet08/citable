@@ -52,61 +52,46 @@ sich selbst als KI-generiert.
 
 ---
 
-## Reihenfolge
+## Reihenfolge — was daraus wurde
 
-Nach jedem Schritt steht etwas Vorzeigbares. Bricht die Nacht ab, ist trotzdem etwas fertig.
+### 1. IPFS ganz ✅
 
-### 1. IPFS ganz
+`lib/citable/cid.mjs` rechnet die CID ohne kubo, gegen kubo 0.43.0 bewiesen.
+`script/js/publish.mjs` geht den ganzen Weg und sendet erst, wenn drei Dinge halten: die
+CID stimmt mit kubo überein, die aus IPFS zurückgelesenen Bytes bauen die Wurzel nach, und
+der deployte Contract nimmt einen Beweis an der richtigen Position an und an der falschen
+nicht. Pinata bleibt nachgelagert und ist eine Umgebungsvariable.
 
-`kubo` ist installiert (`brew install kubo`, Repo unter `~/.ipfs` initialisiert, **kein
-Daemon läuft**). Damit echte CIDs ohne Konto.
+### 2. Demo-Aussage on-chain ✅ — und der bessere Weg war offen
 
-- `script/js/publish.mjs`: Text → `buildBundle` → IPFS → CID → `registerRoot`
-- Lokal beweisen: hochladen, über Gateway zurückholen, `verifyBundle` gegen die Wurzel
-- Pinata ist **nachgelagert**, nicht blockierend: Steht `PINATA_JWT` in `.env`, wird
-  zusätzlich dorthin gepinnt, damit die CID auch fremd erreichbar ist
+Der ENSv2-Registrar auf Sepolia nimmt ein Test-USDC mit öffentlichem `mint`.
+**`wochenzeitung.eth` gehört jetzt dem Deployer**, also blieb der Guard scharf und die drei
+Transaktionen mit Guard-Abschalten waren nicht nötig. `script/js/ens-register.mjs` macht
+das reproduzierbar. Zwei Aussagen registriert, beide unter diesem Namen.
 
-### 2. Demo-Aussage on-chain
+### 3. Stufe 3 im Browser ✅ — vorgezogen
 
-Der Guard ist scharf, also braucht `registerRoot` einen ENS-Namen. Zwei Wege:
+Bewusst vor den Design-Durchgang geholt, weil es das technisch riskanteste Stück war. Das
+war richtig: es hat nicht funktioniert, und der Grund lag tief. `transformers.js` liest
+beim Import `fs`, Turbopack übersetzt Node-Builtins im Browser zu `void 0`, und
+`Object.keys(void 0)` tötete die Bibliothek vor dem ersten Modell-Byte. `resolveAlias` half
+nicht. Jetzt kommt sie zur Laufzeit vom CDN.
 
-- **Sicher:** Guard auf `address(0)`, registrieren, Guard wieder setzen. Drei
-  Transaktionen, ~0,001 ETH. **Frederik hat das freigegeben.**
-- **Besser fürs Video:** einen echten Namen in der ENSv2-Registry auf Sepolia besorgen.
-  Der Weg ist ungeklärt — über die `LabelRegistered`-Events der Registry rückverfolgbar,
-  siehe `script/js/ens-probe.mjs`. Versuchen; wenn es hängt, den sicheren Weg nehmen und
-  es sagen, statt daran zu kleben.
+Im Browser gegen die echte Registry gemessen: Übersetzung 0,8253 (CONCEPT.md maß 0,821 in
+Node), „vierzig Prozent" wird von der Wertprüfung gar nicht erst bewertet, Falschzitat 9 %.
 
-Danach zum ersten Mal der volle Ablauf: Name eingeben, Zitat eingeben, Stufe 1 grün.
+### 4. Registrieren-Screen ✅
 
-### 3. Design-Durchgang am Verify-Screen
+Der Browser rechnet für `anhoerung.txt` dieselbe Wurzel und dieselbe CID wie
+`publish.mjs` — geprüft. Bündel-Download ist Pflicht vor der Transaktion.
 
-Was steht, ist tragfähige Struktur, kein fertiges Design. Der Brief oben gilt.
+### 5. Design-Durchgang ✅
 
-Zwei inhaltliche Entscheidungen, die **bleiben** sollen, weil sie aus `CONCEPT.md` folgen:
-„bewiesen" ist nicht grün (es geht um *festgestellt*, nicht um *gut*), und die drei Stufen
-unterscheiden sich in der **Materialität**, nicht nur in der Farbe — Stufe 3 darf nie wie
-ein Beweis aussehen.
+Fünf Abschnitte, zwei bewegt. Zwei Hero-Varianten liegen in `design/hero/` zur Wahl.
 
-### 4. Registrieren-Screen
+### 6. Author-Screen ❌
 
-Wallet verbinden, Text eingeben, Segmentierung live zeigen, Bündel bauen, CID, `registerRoot`.
-Der Screen, der das Produkt erst zu einem Produkt macht.
-
-### 5. Stufe 3 im Browser
-
-`@xenova/transformers`, beide Modelle aus `CONCEPT.md` 7: `multilingual-e5-small` für die
-Kandidatensuche, `mDeBERTa-v3-base-xnli` für die Deckung. Logik aus
-`script/js/entailment-eval.mjs`, inklusive `unsupportedTokens` aus `script/js/guards.mjs`.
-
-Zusammen ~400 MB Download. Erst auf Klick laden, mit sichtbarem Fortschritt.
-
-### 6. Author-Screen
-
-Steht auf der Streichliste, ist aber klein: `rootsByAuthor` und die Namenssuche gibt es
-schon.
-
----
+Nicht gebaut. Steht auf der Streichliste und ist dort geblieben.
 
 ## Grenzen — was ohne Frederik nicht geht
 
@@ -137,18 +122,31 @@ Playwright installieren und selbst Screenshots machen — sonst wird blind gebau
 
 ---
 
-## Stand beim Übergang
+## Stand
 
 | | |
 |---|---|
-| Contracts | deployt, verifiziert, Guard scharf |
-| `forge test` | 55 grün · `npm test` 43 grün |
-| Verify-Screen | Stufe 1 + 2, Namenssuche, gegen Fixture geprüft |
-| On-chain registriert | **0 Aussagen** |
-| IPFS | Lesen gebaut, nie gegen echte CID gelaufen · Schreiben fehlt |
-| Stufe 3 im Browser | fehlt |
-| Registrieren-Screen | fehlt |
+| Contracts | deployt, verifiziert, Guard scharf und nie abgeschaltet |
+| `forge test` | 55 grün · `npm test` 60 grün · `next build` ohne Warnung |
+| ENS-Name | `wochenzeitung.eth`, wirklich registriert |
+| On-chain registriert | **2 Aussagen** |
+| IPFS | Schreiben und Lesen bewiesen · kein Gateway hält die CIDs |
+| Stufe 1 + 2 | im Browser gegen die Kette geprüft |
+| Stufe 3 im Browser | läuft, reproduziert die gemessenen Zahlen |
+| Registrieren-Screen | steht |
+| Landingpage | steht |
+| Author-Screen | gestrichen |
 
 `CitableRegistry` `0xD3B137b6c6f572290Cf91ac312319364822792e7`
 `ENSv2NameGuard` `0x67732407626BCb5D5610887EC97782c610F5E8d2`
 `owner` `0x5b5Bd6a1523612B67C32D4aDC8b52766d0085D19` (immutable)
+
+## Was jetzt noch fehlt und nur Frederik kann
+
+| | |
+|---|---|
+| Pinata | `PINATA_JWT` in `.env`, dann pinnt `publish.mjs` zusätzlich dorthin |
+| Vercel | `next build` erzeugt nur statische Routen, `NEXT_PUBLIC_SEPOLIA_RPC_URL` setzen |
+| Video | seins |
+| Einreichungsformular | seins, inklusive der ehrlichen Angabe zur KI-Nutzung |
+| Hero-Variante | A oder D, siehe `design/hero/README.md` |

@@ -197,6 +197,19 @@ gebaut. Es soll keinen Dienst geben, dem man vertrauen muss.
 - Der Guard deckt eine Registry und nur Namen zweiter Ebene ab; Unternamen sind vertagt.
 - Wer denselben Text zuerst registriert, gewinnt — Front-Running ist dokumentiert, nicht gelöst.
 - Absatzgranularität, nicht Satzgranularität.
+- Stufe 3 zieht Code von jsDelivr und Gewichte von huggingface.co. Nicht bündelbar, siehe
+  Stand. Stufe 1 und 2 sind davon nicht berührt — sie brauchen nur die Kette und die Bytes.
+- Die registrierten Bündel tragen **keine** Vektoren, Stufe 3 rechnet sie zur Abfragezeit.
+  Kein Loch im Argument: die Absätze wurden vorher gegen die Wurzel gehalten, und wer die
+  Vektoren selbst rechnet, muss dem Veröffentlichenden noch weniger glauben als CONCEPT.md 3
+  annimmt. Es kostet Zeit, nicht Vertrauen. Nachträglich nachrüsten geht nicht: die CID
+  steht unveränderlich auf der Kette, eine neue CID hieße eine neue Wurzel.
+- **Kein öffentliches Gateway hält diese CIDs.** Ohne Pinning-Dienst liefert nur die Kopie
+  in `frontend/public/bundles/`. Die wird wie jede Quelle gegen die Wurzel geprüft und im
+  Screen als das benannt, was sie ist — aber es ist Erreichbarkeit auf genau einem Ursprung,
+  also das, wogegen IPFS gewählt wurde.
+- Der Registrieren-Screen pinnt nicht. Er hat keinen Schlüssel, lädt nichts hoch und
+  verlangt deshalb den Download, bevor er die Transaktion anbietet.
 - Das Kaltstart-Problem bleibt ungelöst.
 
 ## KI-Nutzung
