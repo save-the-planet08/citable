@@ -116,7 +116,7 @@ Honest state of the repository, not a plan.
 | Register screen | ✅ browser root and CID match the publisher's |
 | Landing page | ✅ five sections, two of them move |
 | Production build | ✅ `next build`, all routes static |
-| Pinning to a service | ❌ needs a Pinata account — one env var |
+| Pinned to a service | ✅ both bundles, served by a dedicated gateway |
 | Deployed frontend | ❌ needs a Vercel account |
 | Author screen | ❌ not built — on the cut list |
 | Video | ❌ not started |
@@ -200,9 +200,14 @@ in trust, and the screen names the source it used.
 | A pinning service | Set `PINATA_JWT` in `.env` and `publish.mjs` pins there too. Nothing else changes. |
 | This app's own copy | `frontend/public/bundles/<cid>.json`, written on every publish. Last in the race, and labelled as such on screen. |
 
-Right now the third one is doing the work: no pinning service is configured, so no public
-gateway holds these CIDs. That is a deployment gap, not a design gap — one environment
-variable closes it.
+Both bundles are pinned. Pinata returns the identical CID for them — `cidVersion: 1` on a
+file this small produces the same single raw block `ipfs add` does, so the pin really does
+cover what is on chain, which was not obvious in advance and had to be measured. The
+dedicated gateway answers with `access-control-allow-origin: *`, so a browser can read it;
+the shared `gateway.pinata.cloud` does not serve it and is not used.
+
+The app's own copy is still shipped and still last in the race. It is the answer to "what
+if the pinning service lapses", not the primary path.
 
 ## The frontend
 
@@ -263,10 +268,9 @@ uploaded, and nothing is downloaded before the button is pressed.
 - **The register screen does not pin.** It has no key and uploads nothing, so it makes the
   author download the bundle and refuses to offer the transaction until they have. An
   author who registers without keeping the bytes has put a dead link on chain.
-- **No public gateway currently serves these CIDs.** Nothing is pinned to a service yet, so
-  the bundles are reachable through the copy the app ships. That copy is held to the root
-  like any other source and is named on screen — but it is availability standing on one
-  origin, which is precisely what IPFS was chosen to avoid.
+- **Availability still rests on one pinning account.** The bundles are pinned and a public
+  gateway serves them, but if that account lapses the only remaining holder is the copy the
+  app ships. Better than one origin, not yet many.
 - **The contract cannot check that the CID matches the root.** It never sees the text. A
   mismatch makes the statement unverifiable, so lying only hurts the author.
 - Paragraph granularity, not sentence granularity.

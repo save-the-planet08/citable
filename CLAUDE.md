@@ -204,10 +204,12 @@ gebaut. Es soll keinen Dienst geben, dem man vertrauen muss.
   Vektoren selbst rechnet, muss dem Veröffentlichenden noch weniger glauben als CONCEPT.md 3
   annimmt. Es kostet Zeit, nicht Vertrauen. Nachträglich nachrüsten geht nicht: die CID
   steht unveränderlich auf der Kette, eine neue CID hieße eine neue Wurzel.
-- **Kein öffentliches Gateway hält diese CIDs.** Ohne Pinning-Dienst liefert nur die Kopie
-  in `frontend/public/bundles/`. Die wird wie jede Quelle gegen die Wurzel geprüft und im
-  Screen als das benannt, was sie ist — aber es ist Erreichbarkeit auf genau einem Ursprung,
-  also das, wogegen IPFS gewählt wurde.
+- Beide Bündel sind bei Pinata gepinnt, mit **derselben** CID wie auf der Kette — bei einer
+  Einzelblock-Datei erzeugt `cidVersion: 1` denselben Raw-Block wie `ipfs add`. Das war
+  vorher nicht klar und wurde gemessen. Das dedizierte Gateway antwortet mit
+  `access-control-allow-origin: *`; das geteilte `gateway.pinata.cloud` liefert es nicht.
+  Die Erreichbarkeit hängt damit an **einem Konto** — besser als ein Ursprung, aber noch
+  nicht viele.
 - Der Registrieren-Screen pinnt nicht. Er hat keinen Schlüssel, lädt nichts hoch und
   verlangt deshalb den Download, bevor er die Transaktion anbietet.
 - Das Kaltstart-Problem bleibt ungelöst.
