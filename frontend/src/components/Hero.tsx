@@ -1,95 +1,101 @@
 "use client";
 
-import { DEMO_NAME, DEMO_PARAGRAPHS, DEMO_HIT } from "@/lib/demo";
+import { useEffect, useRef, useState } from "react";
+import { mountImpact, type Impact } from "@/lib/impact";
+import { MISQUOTES, SPREAD_STUDY } from "@/lib/misquotes";
 
 /**
- * The hero shows the product doing its one thing.
+ * The first screen states the problem with a measured number and then destroys five
+ * forgeries with it. The headline and the source line are plain markup and paint at once;
+ * the field underneath is built after mount, so nothing in the LCP path waits on it.
  *
- * Chosen out of the generable class rather than the copyable one: there is no image
- * library here, and a stock photo of someone at a laptop would say nothing about a
- * register of quotations. What can be drawn is the mechanism itself — a text being cut at
- * its blank lines, numbered, and one paragraph pointed at.
- *
- * The paragraphs are real. They are the statement registered on Sepolia under
- * wochenzeitung.eth, not filler, so the first thing a visitor sees is the actual contents
- * of the registry.
- *
- * One entrance, no scroll effect, and it is CSS only: the hero sits in the LCP path and
- * must not wait on a library. Under prefers-reduced-motion every rule below resolves to
- * the finished state — the cut lines drawn, the numbers visible, the position marked.
+ * Under prefers-reduced-motion the field renders its finished state and the five
+ * refutations are set as text instead — still, and complete.
  */
 export function Hero() {
+  const field = useRef<SVGSVGElement>(null);
+  const scene = useRef<Impact | null>(null);
+  const [ran, setRan] = useState(false);
+
+  useEffect(() => {
+    if (!field.current) return;
+    scene.current = mountImpact(field.current);
+    setRan(true);
+    return () => {
+      scene.current?.destroy();
+      scene.current = null;
+    };
+  }, []);
+
   return (
-    <section className="grid items-start gap-10 sm:gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-16">
-      <div>
-        <p className="eyebrow">Citable · a register with position proofs</p>
-        <h1 className="mt-5 font-display text-[clamp(1.85rem,3.4vw,2.65rem)] leading-[1.12] text-balance">
-          Not <em className="text-[var(--ink-soft)]">is this quote real?</em>
-          <span className="mt-1 block" style={{ color: "var(--seal)" }}>
-            Here is the proof that I quoted correctly.
-          </span>
-        </h1>
-        <p className="mt-6 max-w-[34ch] text-[15px] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
-          A statement is cut at its blank lines. Every paragraph is bound to its position,
-          and the position is exactly what a quote loses when it is lifted out of a text.
+    <section className="pb-2">
+      <div className="mt-6 grid items-end gap-6 sm:mt-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-16">
+        <div>
+          <p className="eyebrow">The problem, measured</p>
+          <h1 className="mt-3 font-display text-[clamp(2rem,4.6vw,3.6rem)] leading-[1.06] tracking-[-0.012em] text-balance">
+            A lie reaches 1,500 people{" "}
+            <span style={{ color: "var(--alarm)" }}>six times faster</span> than the truth.
+          </h1>
+        </div>
+        <p
+          className="max-w-[46ch] border-t pt-3.5 text-[clamp(0.9375rem,1.15vw,1.0625rem)] leading-relaxed"
+          style={{ borderColor: "var(--rule)", color: "var(--ink-soft)" }}
+        >
+          The quotations below were{" "}
+          <b className="font-medium" style={{ color: "var(--ink)" }}>
+            never said
+          </b>{" "}
+          by the people they are pinned to. They are still in circulation. Nothing about them
+          is unusual — that is the point.
         </p>
       </div>
 
-      <figure className="m-0">
-        <div className="border" style={{ borderColor: "var(--rule)", background: "var(--paper-raised)" }}>
-          <ol className="m-0 list-none p-0">
-            {DEMO_PARAGRAPHS.map((text, i) => (
-              <li
-                key={i}
-                className={`hero-row relative grid grid-cols-[2.25rem_1fr] py-3.5 pr-4 ${
-                  i === DEMO_HIT ? "hero-hit" : ""
-                }`}
-                style={
-                  {
-                    "--cut-delay": `${0.12 * i + 0.15}s`,
-                    "--mark-delay": `${0.12 * DEMO_PARAGRAPHS.length + 0.35}s`,
-                  } as React.CSSProperties
-                }
-              >
-                <span className="hero-num pt-1 pr-3 text-right font-mono text-[0.6875rem]">{i + 1}</span>
-                <p className="m-0 font-display text-[15px] leading-relaxed">{text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div
-          className="mt-4 flex h-9 items-end gap-0.5 border-b"
-          style={{ borderColor: "var(--rule-strong)" }}
+      <div className="relative mt-5 sm:mt-8">
+        <svg
+          ref={field}
+          className="block h-auto w-full"
           role="img"
-          aria-label={`Paragraph ${DEMO_HIT + 1} of ${DEMO_PARAGRAPHS.length}`}
-        >
-          {DEMO_PARAGRAPHS.map((_, i) => (
-            <span
-              key={i}
-              className="hero-tick flex-1"
-              style={
-                {
-                  height: i === DEMO_HIT ? "100%" : "34%",
-                  background: i === DEMO_HIT ? "var(--seal)" : "var(--rule)",
-                  "--tick-delay": `${0.12 * DEMO_PARAGRAPHS.length + 0.5 + 0.05 * i}s`,
-                } as React.CSSProperties
-              }
-            />
-          ))}
-        </div>
+          aria-label="Fabricated quotation cards are destroyed by the figure six times over; one registered paragraph remains, stamped proven."
+        />
+        {ran && (
+          <button
+            type="button"
+            onClick={() => scene.current?.replay()}
+            className="absolute right-0 -bottom-7 text-xs tracking-wide uppercase motion-reduce:hidden"
+            style={{ color: "var(--ink-faint)" }}
+          >
+            Replay
+          </button>
+        )}
+      </div>
 
-        <figcaption className="mt-2 flex items-baseline justify-between">
-          <span className="eyebrow">Position in the statement</span>
-          <span className="font-mono text-sm" style={{ color: "var(--seal)" }}>
-            {DEMO_HIT + 1}
-            <span style={{ color: "var(--ink-faint)" }}> / {DEMO_PARAGRAPHS.length}</span>
-          </span>
-        </figcaption>
-        <p className="mt-3 text-xs" style={{ color: "var(--ink-faint)" }}>
-          Registered on Sepolia under {DEMO_NAME}. Check it below.
-        </p>
-      </figure>
+      <p className="mt-9 max-w-[64ch] text-xs leading-relaxed" style={{ color: "var(--ink-faint)" }}>
+        <a
+          className="font-medium underline underline-offset-2"
+          style={{ color: "var(--ink-soft)" }}
+          href={SPREAD_STUDY.url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {SPREAD_STUDY.cite}
+        </a>{" "}
+        {SPREAD_STUDY.detail}
+      </p>
+
+      {/* The still version of what the field says, for readers who have motion turned off. */}
+      <div
+        className="mt-6 hidden grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-8 gap-y-4 border-t pt-4 motion-reduce:grid"
+        style={{ borderColor: "var(--rule)" }}
+      >
+        {MISQUOTES.map((m) => (
+          <p key={m.who} className="m-0 text-[0.8125rem] leading-snug" style={{ color: "var(--ink-soft)" }}>
+            <span className="eyebrow block" style={{ color: "var(--alarm)" }}>
+              {m.who}
+            </span>
+            {m.short} — {m.debunk}
+          </p>
+        ))}
+      </div>
     </section>
   );
 }

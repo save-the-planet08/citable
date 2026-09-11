@@ -6,6 +6,7 @@ import { search, type Progress, type SearchResult } from "@/lib/search";
 import { parseQuery } from "@/lib/lookup";
 import { ResultPanel } from "@/components/Verdict";
 import { Hero } from "@/components/Hero";
+import { Masthead } from "@/components/Masthead";
 import { HowItHolds } from "@/components/HowItHolds";
 import { Cascade } from "@/components/Cascade";
 import { Limits } from "@/components/Limits";
@@ -43,8 +44,15 @@ export default function VerifyScreen() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-5 py-14 sm:px-8 sm:py-20">
-      <Hero />
+    <>
+      {/* The hero is the widest thing on the page: the field needs the room, and the
+          masthead belongs to it rather than to the column below. */}
+      <div className="mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-10 sm:pt-8">
+        <Masthead />
+        <Hero />
+      </div>
+
+      <main className="mx-auto w-full max-w-5xl px-5 pb-14 sm:px-8 sm:pb-20">
 
       {/* The instrument itself, and the one section with no motion in it. A tool that
           animates while you are trying to use it is a tool that does not trust its own
@@ -171,6 +179,7 @@ export default function VerifyScreen() {
           not necessarily invented.
         </p>
       </footer>
-    </main>
+      </main>
+    </>
   );
 }
