@@ -2,9 +2,10 @@
 
 Verifizierbares Publishing-Register mit Positionsbeweis. ETHOnline 2026, Abgabe 16.09.2026.
 
-**Laufendes Kapitel: `NIGHT.md`** — das Produkt fertigbauen. Dort steht der Auftrag, der
-Design-Brief und die Reihenfolge. `REVIEW.md` ist abgeschlossen und dient nur noch als
-Nachschlagewerk zu `src/`.
+**Laufendes Kapitel: `WALKTHROUGH.md`** — das Produkt steht, jetzt wird nachgeprüft. Dort
+stehen die sieben Eingaben, die Adressen und die Stellen, an denen sich jede Behauptung
+unabhängig widerlegen ließe. `NIGHT.md` ist abgeschlossen (das Bauen), `REVIEW.md`
+ebenfalls und dient nur noch als Nachschlagewerk zu `src/`.
 
 **Maßgebliche Spezifikation: `CONCEPT.md`** — beide Schichten, mit den Messwerten, auf denen
 die Entscheidungen beruhen. `IDEA.md` ist der erste Entwurf und kennt Schicht 3 nicht; es
