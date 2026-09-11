@@ -6,7 +6,6 @@ import { search, type Progress, type SearchResult } from "@/lib/search";
 import { parseQuery } from "@/lib/lookup";
 import { ResultPanel } from "@/components/Verdict";
 import { Hero } from "@/components/Hero";
-import { Masthead } from "@/components/Masthead";
 import { HowItHolds } from "@/components/HowItHolds";
 import { Cascade } from "@/components/Cascade";
 import { Limits } from "@/components/Limits";
@@ -45,12 +44,9 @@ export default function VerifyScreen() {
 
   return (
     <>
-      {/* The hero is the widest thing on the page: the field needs the room, and the
-          masthead belongs to it rather than to the column below. */}
-      <div className="mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-10 sm:pt-8">
-        <Masthead />
-        <Hero />
-      </div>
+      {/* The hero pins itself and carries the masthead, so it owns the top of the page
+          outright rather than sitting in the column below. */}
+      <Hero />
 
       <main className="mx-auto w-full max-w-5xl px-5 pb-14 sm:px-8 sm:pb-20">
 

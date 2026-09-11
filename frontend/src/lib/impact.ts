@@ -4,16 +4,17 @@ import { MISQUOTES } from "./misquotes";
  * The hero scene: a wall of fabricated quotation cards, a measurement thrown through it,
  * and the one paragraph that can be checked left standing.
  *
- * Drawn rather than fetched. There is no image here to break, so the cards are SVG and the
- * shards are cut out of the cards themselves — each piece is a clipped clone of the card it
- * came from, which is why the text stays readable as it falls. A pile of generic triangles
- * would animate the same and say nothing.
+ * Driven by scroll position, not by a clock. Every shard, dot and note is a pure function
+ * of one number between 0 and 1, which is what makes the whole thing reversible — scroll
+ * back up and the cards reassemble, so a reader who wants to read a refutation again can
+ * simply go back to it. Nothing here fires and forgets.
+ *
+ * Drawn rather than fetched. The shards are cut out of the cards themselves — each piece is
+ * a clipped clone of the card it came from, which is why the text stays readable as it
+ * falls. A pile of generic triangles would animate the same and say nothing.
  *
  * The red is correction ink. It marks an error; it is not a wound, and the thing that
  * breaks is always the forgery, never the page it was printed on.
- *
- * Everything below runs after paint. The headline beside it is plain HTML and does not wait
- * on this file.
  */
 
 type Box = { x: number; y: number; w: number; h: number; rot: number };
@@ -31,6 +32,8 @@ type Layout = {
   recLines: string[];
   num: { size: number; from: number; to: number; along: number; lead: number };
   still: { x: number; y: number };
+  /** How far the front travels while one card comes apart. */
+  burst: number;
 };
 
 const RECORD = {
@@ -61,8 +64,9 @@ const WIDE: Layout = {
     "people, for the people, shall not",
     "perish from the earth.”",
   ],
-  num: { size: 250, from: -520, to: 1700, along: 286, lead: 96 },
+  num: { size: 250, from: -520, to: 1620, along: 286, lead: 96 },
   still: { x: 165, y: 300 },
+  burst: 470,
 };
 
 /* Three cards on a phone rather than five: the whole field has to be visible at once, or
@@ -87,9 +91,27 @@ const NARROW: Layout = {
     "shall not perish from",
     "the earth.”",
   ],
-  num: { size: 118, from: -190, to: 720, along: 214, lead: 48 },
+  num: { size: 118, from: -190, to: 620, along: 214, lead: 48 },
   still: { x: 214, y: 56 },
+  burst: 260,
 };
+
+/* The scroll is divided once, here, so the phases can be read in one place.
+ *   rest    the wall stands, long enough to be looked at
+ *   sweep   the figure crosses and the cards come apart in turn
+ *   settle  the wreckage clears
+ *   record  what can be checked rises, and is stamped */
+const REST_END = 0.06;
+const SWEEP_END = 0.72;
+const RECORD_START = 0.72;
+const RECORD_END = 0.88;
+const STAMP_START = 0.87;
+const STAMP_END = 0.96;
+/* Past STAMP_END the scene is finished and the pin simply holds it, so the last thing a
+   reader sees before the page moves on is the record, not a half-played animation. */
+
+const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+const span = (v: number, a: number, b: number) => clamp01((v - a) / (b - a));
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -167,18 +189,27 @@ function shardsOf(b: Box, px: number, py: number, n: number): [number, number][]
   });
 }
 
-export type Impact = { replay: () => void; destroy: () => void };
+type Piece = { g: SVGGElement; dx: number; dy: number; rot: number };
+type Dot = { g: SVGCircleElement; dx: number; dy: number };
+type Card = {
+  intact: SVGGElement;
+  wreck: SVGGElement;
+  pieces: Piece[];
+  dots: Dot[];
+  note: SVGTextElement;
+  at: number;
+};
+
+export type Impact = { render: (progress: number) => void; destroy: () => void };
 
 export function mountImpact(svg: SVGSVGElement): Impact {
   const still = matchMedia("(prefers-reduced-motion: reduce)");
-  let frame = 0;
-  let pending: ReturnType<typeof setTimeout>[] = [];
+  let draw: (p: number) => void = () => {};
+  let last = 0;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+  let width = innerWidth;
 
   function build() {
-    cancelAnimationFrame(frame);
-    pending.forEach(clearTimeout);
-    pending = [];
     svg.replaceChildren();
 
     const L = innerWidth < 840 ? NARROW : WIDE;
@@ -189,7 +220,7 @@ export function mountImpact(svg: SVGSVGElement): Impact {
     svg.append(defs, back, burst, front);
 
     /* ---- the forgeries ---- */
-    const cards = L.cards.map((box, i) => {
+    const cards: Card[] = L.cards.map((box, i) => {
       const fact = MISQUOTES[L.use[i]];
       const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
       const g = el("g", { id: `fake-${i}`, transform: `rotate(${box.rot} ${cx} ${cy})` });
@@ -220,7 +251,60 @@ export function mountImpact(svg: SVGSVGElement): Impact {
 
       defs.append(g.cloneNode(true));      // the template every shard is cut from
       back.append(g);
-      return { g, box, cx, cy, i, fact, gone: false };
+
+      /* Every shard exists from the start and only ever moves, so the break can be run
+         backwards as easily as forwards. */
+      const px = box.x + box.w * (0.25 + Math.random() * 0.5);
+      const py = box.y + box.h * (0.3 + Math.random() * 0.4);
+      const wreck = el("g", { opacity: 0 });
+
+      const pieces: Piece[] = shardsOf(box, px, py, 11).map((pts, k) => {
+        const id = `shard-${i}-${k}`;
+        const clip = el("clipPath", { id });
+        clip.append(el("polygon", { points: pts.map((p) => p.join(",")).join(" ") }));
+        defs.append(clip);
+
+        const holder = el("g", { "clip-path": `url(#${id})` });
+        holder.append(el("use", { href: `#fake-${i}` }));
+        const piece = el("g");
+        piece.append(holder);
+
+        const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+        const my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+        piece.style.transformOrigin = `${mx}px ${my}px`;
+        wreck.append(piece);
+
+        const a = Math.atan2(my - py, mx - px);
+        const d = 70 + Math.random() * 210;
+        return {
+          g: piece,
+          dx: Math.cos(a) * d + (L.axis === "x" ? 110 : 0),
+          dy: Math.sin(a) * d + (L.axis === "y" ? 110 : 0),
+          rot: (Math.random() - 0.5) * 150,
+        };
+      });
+
+      const dots: Dot[] = Array.from({ length: 16 }, () => {
+        const a = Math.random() * Math.PI * 2;
+        const dot = el("circle", { cx: px, cy: py, r: 2 + Math.random() * 5.5, fill: "var(--alarm)" });
+        wreck.append(dot);
+        return {
+          g: dot,
+          dx: Math.cos(a) * (40 + Math.random() * 190),
+          dy: Math.sin(a) * (30 + Math.random() * 120) + 190,
+        };
+      });
+      burst.append(wreck);
+
+      /* what the destruction is for: the reason, where the card stood */
+      const note = el("text", {
+        x: box.x, y: box.y + box.h / 2, opacity: 0, fill: "var(--alarm)",
+        "font-family": "var(--font-ui)", "font-size": 13, "font-weight": 500,
+      });
+      note.textContent = fact.debunk;
+      burst.append(note);
+
+      return { intact: g, wreck, pieces, dots, note, at: L.axis === "x" ? cx : cy };
     });
 
     /* ---- the record that survives ----
@@ -286,7 +370,6 @@ export function mountImpact(svg: SVGSVGElement): Impact {
     where.textContent = `paragraph ${RECORD.index} of ${RECORD.total}`;
     stamp.append(proven, where);
     stamp.style.transformOrigin = `${sx + stampW / 2}px ${sy + stampH / 2}px`;
-    stamp.style.transform = "rotate(-7deg)";   // a stamp lands askew
     front.append(stamp);
 
     /* ---- the projectile ---- */
@@ -338,141 +421,86 @@ export function mountImpact(svg: SVGSVGElement): Impact {
       }
     };
 
-    function shatter(card: (typeof cards)[number]) {
-      card.gone = true;
-      const b = card.box;
-      const px = b.x + b.w * (0.25 + Math.random() * 0.5);
-      const py = b.y + b.h * (0.3 + Math.random() * 0.4);
-
-      shardsOf(b, px, py, 11).forEach((pts, k) => {
-        const id = `shard-${card.i}-${k}`;
-        const clip = el("clipPath", { id });
-        clip.append(el("polygon", { points: pts.map((p) => p.join(",")).join(" ") }));
-        defs.append(clip);
-
-        const holder = el("g", { "clip-path": `url(#${id})` });
-        holder.append(el("use", { href: `#fake-${card.i}` }));
-        const piece = el("g");
-        piece.append(holder);
-
-        const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
-        const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
-        piece.style.transformOrigin = `${cx}px ${cy}px`;
-        burst.append(piece);
-
-        const a = Math.atan2(cy - py, cx - px);
-        const d = 70 + Math.random() * 210;
-        const dx = Math.cos(a) * d + (L.axis === "x" ? 110 : 0);
-        const dy = Math.sin(a) * d + (L.axis === "y" ? 110 : 0);
-        const rot = (Math.random() - 0.5) * 150;
-        piece.animate(
-          [
-            { transform: "translate(0px,0px) rotate(0deg)", opacity: 1 },
-            { transform: `translate(${dx * 0.4}px,${dy * 0.4 - 26}px) rotate(${rot * 0.35}deg)`,
-              opacity: 1, offset: 0.28 },
-            { transform: `translate(${dx}px,${dy + 640}px) rotate(${rot}deg)`, opacity: 0 },
-          ],
-          { duration: 1000 + Math.random() * 520, easing: "cubic-bezier(.22,.6,.45,1)", fill: "forwards" },
-        );
-      });
-
-      card.g.remove();
-
-      for (let i = 0; i < 16; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const dot = el("circle", { cx: px, cy: py, r: 2 + Math.random() * 5.5, fill: "var(--alarm)" });
-        burst.append(dot);
-        dot.animate(
-          [
-            { transform: "translate(0,0)", opacity: 0.85 },
-            { transform: `translate(${Math.cos(a) * (40 + Math.random() * 190)}px,` +
-                         `${Math.sin(a) * (30 + Math.random() * 120) + 190}px)`, opacity: 0 },
-          ],
-          { duration: 780 + Math.random() * 420, easing: "cubic-bezier(.2,.7,.4,1)", fill: "forwards" },
-        );
-      }
-
-      /* what the destruction is for: the reason, where the card stood */
-      const note = el("text", {
-        x: b.x, y: b.y + b.h / 2, fill: "var(--alarm)",
-        "font-family": "var(--font-ui)", "font-size": 13, "font-weight": 500,
-      });
-      note.textContent = card.fact.debunk;
-      burst.append(note);
-      note.animate(
-        [
-          { opacity: 0, transform: "translate(0,10px)" },
-          { opacity: 1, transform: "translate(0,0)", offset: 0.14 },
-          { opacity: 1, transform: "translate(0,0)", offset: 0.72 },
-          { opacity: 0, transform: "translate(0,-10px)" },
-        ],
-        { duration: 1700, easing: "ease-out", fill: "forwards" },
-      );
-    }
-
     if (still.matches) {
       // The end state is the correct state, so the still version is simply that state —
       // with the projectile parked clear of the record instead of on top of it.
-      cards.forEach((c) => c.g.remove());
+      cards.forEach((c) => { c.intact.remove(); c.wreck.remove(); c.note.remove(); });
       rec.setAttribute("opacity", "1");
       stamp.setAttribute("opacity", "1");
+      stamp.style.transform = "rotate(-7deg)";
       cross = L.axis === "x" ? L.still.y : L.still.x;
       place(L.axis === "x" ? L.still.x : L.still.y);
       num.setAttribute("opacity", "1");
       streaks.forEach((r) => r.setAttribute("opacity", "0"));
-      shock.setAttribute("opacity", "0");
+      draw = () => {};
       return;
     }
 
-    const T0 = 500, T1 = 3000;
-    const started = performance.now();
-    place(L.num.from);
-    const axisOf = (c: (typeof cards)[number]) => (L.axis === "x" ? c.cx : c.cy);
+    draw = (p: number) => {
+      const t = span(p, REST_END, SWEEP_END);
+      const flown = L.num.from + (L.num.to - L.num.from) * (1 - Math.pow(1 - t, 1.4));
+      place(flown);
 
-    function finish() {
-      num.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" });
-      rec.animate(
-        [{ opacity: 0, transform: "translate(0,18px)" }, { opacity: 1, transform: "translate(0,0)" }],
-        { duration: 620, easing: "cubic-bezier(.2,.7,.3,1)", fill: "forwards" },
-      );
-      pending.push(setTimeout(() => {
-        stamp.animate(
-          [{ opacity: 0, transform: "rotate(-7deg) scale(2.1)" },
-           { opacity: 1, transform: "rotate(-7deg) scale(1)" }],
-          { duration: 230, easing: "cubic-bezier(.3,1.5,.5,1)", fill: "forwards" },
-        );
-      }, 470));
-    }
+      const leaving = span(p, SWEEP_END - 0.06, SWEEP_END);
+      num.setAttribute("opacity", t <= 0 ? "0" : String(1 - leaving));
+      shock.setAttribute("opacity", t <= 0 || t >= 1 ? "0" : String((0.5 - t * 0.4) * (1 - leaving)));
 
-    const step = (now: number) => {
-      const t = now - started;
-      if (t > T0) {
-        num.setAttribute("opacity", "1");
-        const k = Math.min(1, (t - T0) / (T1 - T0));
-        const eased = 1 - Math.pow(1 - k, 1.5);        // fast in, losing energy
-        const p = L.num.from + (L.num.to - L.num.from) * eased;
-        place(p);
-        shock.setAttribute("opacity", k < 0.96 ? String(0.5 - k * 0.4) : "0");
-        cards.forEach((c) => { if (!c.gone && p + L.num.lead >= axisOf(c)) shatter(c); });
-        if (k >= 1) { finish(); return; }
-      }
-      frame = requestAnimationFrame(step);
+      const rise = span(p, RECORD_START, RECORD_END);
+
+      cards.forEach((card) => {
+        const c = clamp01((flown + L.num.lead - card.at) / L.burst);
+        card.intact.setAttribute("opacity", c > 0 ? "0" : "1");
+        card.wreck.setAttribute("opacity", c > 0 ? "1" : "0");
+
+        if (c > 0) {
+          const out = 1 - Math.pow(1 - c, 2);          // thrown hard, then coasting
+          const fall = c * c * 640;                     // and gravity all the way down
+          const fade = 1 - span(c, 0.72, 1);
+          card.pieces.forEach((s) => {
+            s.g.style.transform =
+              `translate(${s.dx * out}px, ${s.dy * out + fall}px) rotate(${s.rot * c}deg)`;
+            s.g.style.opacity = String(fade);
+          });
+          card.dots.forEach((d) => {
+            d.g.style.transform = `translate(${d.dx * out}px, ${d.dy * out}px)`;
+            d.g.style.opacity = String(0.85 * (1 - span(c, 0.5, 1)));
+          });
+        }
+
+        // The reason stays up until the record takes the field, so it can be scrolled
+        // back to and read again.
+        card.note.setAttribute("opacity", String(span(c, 0.04, 0.2) * (1 - rise)));
+      });
+
+      rec.setAttribute("opacity", String(rise));
+      rec.style.transform = `translate(0px, ${(1 - rise) * 18}px)`;
+
+      const hit = span(p, STAMP_START, STAMP_END);
+      stamp.setAttribute("opacity", String(hit));
+      stamp.style.transform = `rotate(-7deg) scale(${2.1 - 1.1 * hit})`;
     };
-    frame = requestAnimationFrame(step);
+
+    draw(last);
   }
 
   build();
+
   const onResize = () => {
+    // Only a change of width can change the layout; mobile browsers fire resize on every
+    // address-bar nudge, and rebuilding there would restart the scene mid-scroll.
+    if (innerWidth === width) return;
+    width = innerWidth;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(build, 220);
   };
   addEventListener("resize", onResize);
 
   return {
-    replay: build,
+    render(progress: number) {
+      last = progress;
+      draw(progress);
+    },
     destroy() {
-      cancelAnimationFrame(frame);
-      pending.forEach(clearTimeout);
       clearTimeout(resizeTimer);
       removeEventListener("resize", onResize);
     },
