@@ -115,9 +115,119 @@ body {
   animation: rise 260ms ease-out both;
 }
 
+
+/* ---------------------------------------------------------------------------
+ * The hero's one entrance.
+ *
+ * CSS only and no library: the hero sits in the LCP path, so nothing here may wait on
+ * JavaScript. Each rule below has a finished state that is also the correct state — under
+ * prefers-reduced-motion the animations are simply removed and the section is complete:
+ * cuts drawn, numbers visible, position marked.
+ * ------------------------------------------------------------------------ */
+
+.hero-row {
+  position: relative;
+}
+
+/* The cut. A paragraph boundary is a decision the segmenter makes, so it is drawn as one
+ * rather than being there from the start. */
+.hero-row + .hero-row::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: var(--rule);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: hero-cut 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation-delay: var(--cut-delay, 0s);
+}
+
+@keyframes hero-cut {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.hero-num {
+  color: var(--ink-faint);
+  opacity: 0;
+  animation: hero-fade 0.4s ease forwards;
+  animation-delay: var(--cut-delay, 0s);
+}
+
+@keyframes hero-fade {
+  to {
+    opacity: 1;
+  }
+}
+
+.hero-row p {
+  color: var(--ink-soft);
+}
+
+.hero-hit {
+  background: #fff;
+}
+
+.hero-hit p {
+  color: var(--ink);
+}
+
+.hero-hit .hero-num {
+  color: var(--seal);
+  font-weight: 500;
+}
+
+/* The mark arrives last, after every cut is made. The order is the argument: first the
+ * text is divided, then one position is pointed at. */
+.hero-hit::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--seal);
+  transform: scaleY(0);
+  transform-origin: top;
+  animation: hero-mark 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation-delay: var(--mark-delay, 0s);
+}
+
+@keyframes hero-mark {
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.hero-tick {
+  transform: scaleY(0);
+  transform-origin: bottom;
+  animation: hero-tick 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  animation-delay: var(--tick-delay, 0s);
+}
+
+@keyframes hero-tick {
+  to {
+    transform: scaleY(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise {
     animation: none;
+  }
+
+  /* The end state is the correct state, so removing the animation is enough. */
+  .hero-row + .hero-row::before,
+  .hero-num,
+  .hero-hit::after,
+  .hero-tick {
+    animation: none;
+    transform: none;
+    opacity: 1;
   }
   *,
   *::before,
