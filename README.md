@@ -112,10 +112,24 @@ Honest state of the repository, not a plan.
 | IPFS write path | ✅ `script/js/publish.mjs`, round trip proven |
 | A real ENSv2 name on Sepolia | ✅ `wochenzeitung.eth`, guard stayed armed |
 | Statements registered on chain | ✅ 2, both under that name |
+| Stage 3 in the browser | ✅ reproduces the measured numbers in a real browser |
+| Register screen | ✅ browser root and CID match the publisher's |
+| Landing page | ✅ five sections, two of them move |
+| Production build | ✅ `next build`, all routes static |
 | Pinning to a service | ❌ needs a Pinata account — one env var |
-| Stage 3 in the browser | 🚧 built, being run in a browser now |
-| Register screen | ❌ not built |
+| Deployed frontend | ❌ needs a Vercel account |
+| Author screen | ❌ not built — on the cut list |
 | Video | ❌ not started |
+
+Stage 3 run against the live registry, in Chromium, with the models fetched at runtime:
+
+| Typed in | Answer |
+|---|---|
+| `Revenue rose by four percent last quarter.` | covered, 0.8253 entailment — CONCEPT.md measured 0.821 for this case in Node |
+| `…stieg der Umsatz um vierzig Prozent.` | not measured at all: the value check found the number 40 in a paragraph that says four |
+| `Roth hat zugegeben, dass die Zahlen manipuliert wurden.` | 9 % — the false quote that scored 0.880 on similarity, above a correct translation |
+
+The last row is the whole argument in one line.
 
 ## Run it
 
@@ -213,6 +227,12 @@ uploaded, and nothing is downloaded before the button is pressed.
 ## Limitations
 
 - **Stage 3 is a measurement, not a proof.** It can be wrong, and it is labelled as such.
+- **Stage 3 pulls code and weights from third parties.** transformers.js comes from jsDelivr
+  and the two models from huggingface.co. It cannot be bundled: the library reads `fs` at
+  import time to decide whether it is on a server, and Turbopack compiles a bare node
+  builtin in a browser bundle to `void 0`, so `Object.keys(void 0)` killed it on
+  evaluation. Worth stating plainly — and worth noting what it does not touch. Stages 1
+  and 2 depend on nothing but the chain and the bytes.
 - **Spanish is weak** (0.562 vs 0.821 for English) and would be rejected at threshold 0.80.
   A false negative — annoying, not dangerous.
 - **16 test cases are a signal, not a validation.** Real confidence needs 50–100.
