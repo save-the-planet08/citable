@@ -1,16 +1,24 @@
 // Finding statements without an indexer.
 //
 // StatementRegistered carries ensNode as an indexed topic (src/CitableRegistry.sol:38),
-// so one getLogs call returns every statement published under a name. That is the whole
+// so a getLogs call returns every statement published under a name. That is the whole
 // reason the subgraph could be dropped: there is no service in between, the chain answers
 // the question directly.
+//
+// The price of having no indexer is that the query has to survive whatever eth_getLogs
+// limit the reader's RPC endpoint imposes — see registeredLogs below.
 import { keccak256, toHex, isAddress, type Address } from "viem";
 import { publicClient, REGISTRY } from "./chain";
 
 // The block the registry was deployed in. Without a floor, getLogs walks the whole chain
 // and public RPCs abort the request — which surfaces as "no statements found" and looks
 // like an empty registry rather than a failed query.
-const DEPLOY_BLOCK = BigInt(0xb225f3);
+//
+// Overridable because it is a fact about a deployment and not about the code: a registry
+// deployed somewhere else has a different floor. Setting it to 0 also makes the range
+// fallback below reachable on demand, which is how it gets tested against a provider that
+// really does refuse a wide window.
+const DEPLOY_BLOCK = BigInt(process.env.NEXT_PUBLIC_REGISTRY_FROM_BLOCK ?? 0xb225f3);
 
 /** Cap on how many statements one search will open. Each costs an IPFS round trip. */
 export const SEARCH_LIMIT = 25;
@@ -79,15 +87,65 @@ export interface Candidate {
   segmentCount: number;
 }
 
+/**
+ * The widest window to ask for once a provider has refused the whole range.
+ *
+ * Public endpoints cap eth_getLogs and they do not agree on where: measured on Sepolia,
+ * tenderly serves genesis-to-latest in 120ms while publicnode refuses anything past 50 000
+ * blocks. A fixed window would be wrong for both — too small is needless round trips, too
+ * large fails on the stricter half of the internet.
+ */
+const MAX_SPAN = BigInt(45_000);
+
+/** Below this, a provider is not range limited but broken, and the error is real. */
+const MIN_SPAN = BigInt(1_000);
+
+/**
+ * Every StatementRegistered log in a range, whatever the provider's limit happens to be.
+ *
+ * The whole range is tried first, so a capable endpoint costs exactly one request and keeps
+ * costing one as the chain grows. Only when that is refused does it fall back to windows,
+ * halving them until the provider stops complaining.
+ *
+ * This matters more than it looks. The search walks from the deploy block to the head, and
+ * that distance only ever grows — a registry that answers today would start failing on a
+ * stricter endpoint a few weeks from now, and the failure surfaces as "could not read the
+ * registry" in front of whoever is watching.
+ */
+async function registeredLogs(args: { ensNode?: `0x${string}` }) {
+  const head = await publicClient.getBlockNumber();
+  const ask = (fromBlock: bigint, toBlock: bigint) =>
+    publicClient.getLogs({ address: REGISTRY, event: registeredEvent, args, fromBlock, toBlock });
+
+  try {
+    return await ask(DEPLOY_BLOCK, head);
+  } catch {
+    // Refused. Fall through to windows rather than reporting an empty registry.
+  }
+
+  const logs: Awaited<ReturnType<typeof ask>> = [];
+  let span = MAX_SPAN;
+  let cursor = DEPLOY_BLOCK;
+
+  while (cursor <= head) {
+    const end = cursor + span - BigInt(1) > head ? head : cursor + span - BigInt(1);
+    try {
+      logs.push(...(await ask(cursor, end)));
+      cursor = end + BigInt(1);
+    } catch (error) {
+      // Narrow and retry the same window. Giving up here would hand the caller an empty
+      // list, and an empty list is indistinguishable from "this name published nothing" —
+      // exactly the false absence claim this project refuses to make.
+      if (span <= MIN_SPAN) throw error;
+      span /= BigInt(2);
+    }
+  }
+  return logs;
+}
+
 /** Every statement registered under this name, newest first. */
 export async function statementsByName(ensNode: `0x${string}`): Promise<Candidate[]> {
-  const logs = await publicClient.getLogs({
-    address: REGISTRY,
-    event: registeredEvent,
-    args: { ensNode },
-    fromBlock: DEPLOY_BLOCK,
-    toBlock: "latest",
-  });
+  const logs = await registeredLogs({ ensNode });
 
   return logs
     .reverse()
