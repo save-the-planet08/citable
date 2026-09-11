@@ -125,7 +125,7 @@ export function HowItHolds() {
   }, []);
 
   return (
-    <section className="mt-28 sm:mt-36">
+    <section id="how" className="mt-24 scroll-mt-6 sm:mt-32">
       <p className="eyebrow">How a proof holds</p>
       <h2 className="mt-3 max-w-[22ch] font-display text-[clamp(1.5rem,3vw,2.1rem)] leading-tight text-balance">
         Seven paragraphs go in. Thirty-two bytes come out.

@@ -33,7 +33,7 @@ export function Masthead() {
         <Link href="/#check" className="border-b border-transparent pb-0.5 hover:border-current">
           Check a quote
         </Link>
-        <Link href="/register" className="border-b border-transparent pb-0.5 hover:border-current">
+        <Link href="/#register" className="border-b border-transparent pb-0.5 hover:border-current">
           Register a statement
         </Link>
         <Link
