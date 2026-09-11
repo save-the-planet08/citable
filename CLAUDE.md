@@ -66,40 +66,61 @@ npm test                     # Client-Bibliothek
 
 ## Stand
 
-Arbeitstag 3 (Do 10.09.). Erledigt: Foundry-Setup, OpenZeppelin v5.7.0, Blattformel mit
-bewiesener JS/Solidity-Parität, `CitableRegistry` mit Positionsbeweis, Schicht 3 gemessen
-und entschieden (NLI + Wertprüfung statt Ähnlichkeit), Client-Bibliothek `lib/citable/`,
-die ENS-Schicht, der Deploy auf Sepolia, und der Verify-Screen mit Stufe 1 und 2.
+Arbeitstag 4 (Fr 11.09., in der Nacht davor gebaut). Der volle Ablauf läuft zum ersten Mal
+wirklich durch: Text → Bündel → IPFS → Kette → Beweis im Browser.
 
-**Tests:** `forge test` 55 grün (die ENS-Fork-Tests laufen mit, seit `SEPOLIA_RPC_URL` steht),
-`npm test` 43 grün, `forge fmt --check` und `forge build` ohne Warnung.
+**Tests:** `forge test` 55 grün, `npm test` 60 grün (CID und Wertprüfung sind dazugekommen),
+`forge fmt --check`, `forge build` und `next build` ohne Warnung. `next build` erzeugt nur
+statische Routen — der Vercel-Deploy ist ein Konfigurationsschritt, kein Umbau.
 
-**ENS-Entscheidung Weg A ist umgesetzt.** Die offene Frage aus BUILD.md 2a ist geklärt:
-Die unteren 32 Bit einer ENSv2-Token-ID tragen `tokenVersionId` aus dem Registry-Speicher
-(`LibLabel.withVersion(anyId, v) = anyId ^ uint32(anyId) ^ v`), deshalb liefert
-`ownerOf(labelhash)` für *jeden* Namen `0x0`. `"ens"` hat zusätzlich keinen Inhaber, weil
-es RESERVED ist. Bewiesen in `script/js/ens-probe.mjs` gegen Namen, die es selbst aus
-Mint-Ereignissen findet — darunter einer bei Version 9.
+**`wochenzeitung.eth` gehört uns.** Der ENSv2-Registrar auf Sepolia nimmt ein Test-USDC mit
+öffentlichem `mint`, also war der zweite Weg aus NIGHT.md 2 doch offen. Damit **blieb der
+Guard die ganze Zeit scharf** — die drei Transaktionen mit Guard-Abschalten waren nicht
+nötig und sind nicht passiert. `script/js/ens-register.mjs` macht den Weg reproduzierbar.
 
-Daraus folgt die Bauregel: **Der Guard rechnet nie eine Token-ID aus**, er fragt die
-Registry (`getOwner`, `roles`), die die Versionsbits selbst auflöst.
+**Zwei Aussagen registriert**, beide unter diesem Namen, beide mit scharfem Guard:
 
-`ENSv2NameGuard` prüft nicht bloß Besitz, sondern eine Publikationsrolle
-(`ROLE_SET_RESOLVER`, per Konstruktor gesetzt). Ein eigenes Rollen-Bit ginge nicht: ENSv2
-vergibt Admin-Rollen nur bei der Registrierung. Der Guard liest `roles` statt `hasRoles`,
-sonst dürfte der Registrar der ROOT_RESOURCE unter jedem fremden Namen veröffentlichen.
+| | |
+|---|---|
+| `statements/wochenzeitung/anhoerung.txt` | `0xa2ea6730…891ebc4b`, 7 Absätze |
+| `statements/wochenzeitung/quartalszahlen.txt` | `0x2690f5f5…33b45caf`, 6 Absätze |
 
-`ensNode` heißt ab jetzt: die ENSv2-Kennung eines Namens, also `labelhash(label)` — nicht
-der ENSv1-Namehash. Aus einem Namehash ließe sich das Label nicht zurückgewinnen.
+`quartalszahlen.txt` ist **wörtlich** der Messkorpus aus `script/js/entailment-eval.mjs`.
+Stünde dort ein anderer Text, wären die Zahlen im Video nicht die gemessenen.
 
-**Der Deploy-Pfad ist bewiesen, nicht bloß geschrieben.** Gegen einen lokalen Anvil-Fork
-von Sepolia wurde wirklich gebroadcastet: beide Contracts deployt, Guard verdrahtet,
-`deployments/sepolia.json` geschrieben. Danach der Rauchtest mit echtem ENS-Zustand — ein
-realer Namensinhaber registriert, der Beweis aus `lib/citable/` wird von `verifySegment`
-angenommen, an falscher Position abgelehnt, ein Fremder scheitert an `NotAuthorized`. Die
-Artefakte des Forks sind wieder entfernt.
+**CID ohne kubo** (`lib/citable/cid.mjs`): eine Datei unter der Chunk-Größe ist ein einzelner
+Raw-Block, ihre CID also sha256 mit vier Byte Kopf. Gegen kubo 0.43.0 geprüft, Vektoren
+liegen im Test. Darüber hinaus wirft es, statt eine CID zu raten, die nirgendwohin zeigt.
 
-**Deployt auf Sepolia** (Arbeitstag 3, Do 10.09.), beide Contracts auf Etherscan verifiziert:
+**Die Bündel-Quellen laufen um die Wette**, und die Wurzelprüfung ist *in* das Rennen
+hineingegeben: wer Bytes liefert, die die Wurzel nicht nachbauen, verliert das Rennen,
+statt geglaubt zu werden. Deshalb darf die App eine eigene Kopie ausliefern
+(`frontend/public/bundles/`) — sie kauft Erreichbarkeit, nicht Vertrauen, und der Screen
+sagt, welche Quelle geantwortet hat. Ausfall und Fälschung bleiben getrennt: „niemand
+antwortet" beweist nichts, „jemand antwortet mit falschen Bytes" ist ein Vorwurf.
+
+**Stufe 3 läuft im Browser** und reproduziert die gemessenen Zahlen: englische Übersetzung
+0,8253 (CONCEPT.md maß 0,821 in Node), „vierzig Prozent" wird von der Wertprüfung gar nicht
+erst bewertet, das Falschzitat bekommt 9 %.
+
+**transformers.js lässt sich hier nicht bündeln.** `env.js` liest beim Import `fs`, um zu
+entscheiden, ob es auf einem Server läuft; Turbopack übersetzt ein nacktes Node-Builtin im
+Browser-Bundle zu `void 0`, und `Object.keys(void 0)` tötet die Bibliothek vor dem ersten
+Modell-Byte. `resolveAlias` hilft nicht — die Ersetzung passiert vor der Auflösung. Die
+Bibliothek kommt jetzt zur Laufzeit von jsDelivr, die Gewichte von huggingface.co. Das ist
+eine echte Abhängigkeit und steht so im README. Stufe 1 und 2 sind davon nicht berührt.
+
+**Registrieren-Screen steht.** Der Browser rechnet für `anhoerung.txt` dieselbe Wurzel und
+dieselbe CID wie `script/js/publish.mjs` — geprüft, nicht angenommen. Schritt 3 (Bündel
+herunterladen) ist Pflicht, weil die Seite keinen Pinning-Schlüssel hat: wer ohne die Bytes
+registriert, legt einen toten Link mit Zeitstempel auf die Kette.
+
+**Landingpage:** fünf Abschnitte, zwei davon bewegt — der Baum zeichnet sich von den
+Blättern aufwärts (die Reihenfolge, in der er gerechnet wird), und die Behauptung steht
+still, während die drei Stufen daran vorbeilaufen. Die Grenzen-Sektion ist bewusst
+unbewegt. Geprüft auf 1440 und 390 und mit `prefers-reduced-motion`.
+
+**Contracts** (unverändert, Arbeitstag 3):
 
 | | |
 |---|---|
@@ -107,39 +128,12 @@ Artefakte des Forks sind wieder entfernt.
 | `ENSv2NameGuard` | `0x67732407626BCb5D5610887EC97782c610F5E8d2` |
 | `owner` (immutable) | `0x5b5Bd6a1523612B67C32D4aDC8b52766d0085D19` |
 
-Der Guard ist verdrahtet und scharf: `nameGuard` zeigt auf den Guard, `PUBLISH_ROLE` ist
-16777216 (`1 << 24`), `REGISTRY` auf die ENSv2-ETHRegistry. Gegengeprüft mit `cast call`
-gegen die Kette, nicht nur aus der Skriptausgabe. `leafOf(3, "Hallo Welt")` liefert on-chain
-denselben Hash wie `script/js/leaf.mjs` — die JS/Solidity-Parität ist damit gegen den echten
-Contract bewiesen.
+**Offen und nur von Frederik zu lösen:** Pinata-Konto (`PINATA_JWT` in `.env`, dann pinnt
+`publish.mjs` zusätzlich dorthin — sonst hält nur die App-eigene Kopie die CIDs), Vercel,
+Video, Einreichungsformular. Alle vier sind Konfiguration, kein Umbau.
 
-Nur dieses `owner`-Konto kann je den Guard setzen oder tauschen. `owner` ist `immutable`,
-daran ist nichts mehr zu ändern.
-
-**Frontend steht an (Arbeitstag 3).** `frontend/` ist Next.js 16 mit Turbopack, alles
-client-seitig, kein Server. `lib/citable/` wird per Alias importiert, nicht kopiert — eine
-zweite Kopie der Blattformel wäre genau die Drift, gegen die `test/ProofBridge.t.sol`
-existiert. `merkletreejs` braucht `Buffer`, den Browser nicht haben; `src/lib/citable.ts`
-setzt ihn und lädt die Bibliothek danach dynamisch.
-
-Gebaut: Verify-Screen mit Stufe 1 und 2, Suche über den ENS-Namen statt über die Wurzel
-(`ensNode` ist im Event indexed, deshalb reicht ein `getLogs` — kein Indexer, kein
-Subgraph), und die Abwesenheitsaussage mit sichtbarem Nenner.
-
-**Noch nie mit echten Daten gelaufen:** `statementCount()` steht auf 0. Es ist keine
-Aussage registriert, also endet jede Eingabe bei „nicht registriert". Der Rest steht in
-`NIGHT.md`.
-
-**Als Nächstes:** siehe `NIGHT.md`. Offen aus `REVIEW.md`: `script/` und `test/`
-überfliegen, vor allem `test/Leaf.t.sol` und `test/ProofBridge.t.sol`.
-
-`BUILD.md` ist abgearbeitet bis auf den Broadcast und gilt nur noch als Nachweis, was
-beauftragt war.
-
-**Nicht vergessen — `segmentCount` ist keine bewiesene Zahl.** Aus einer Wurzel lässt sich
-die Blattzahl nicht zurückrechnen. Das Feld dient nur der Bereichsprüfung. Das *n* in
-"Absatz i von n" kommt aus dem Bündel, das `verifyBundle` gegen die Wurzel hält — dort ist
-es bewiesen.
+**Noch nicht gebaut:** Author-Screen (steht ohnehin auf der Streichliste). Zwei
+Hero-Varianten liegen zur Wahl in `design/hero/` — gebaut ist Variante D.
 
 ## Arbeitsregeln
 

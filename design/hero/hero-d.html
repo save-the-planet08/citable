@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero D — Der Mechanismus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#edeee9; --paper-raised:#f6f7f3; --ink:#16181c; --ink-soft:#5a6067;
+  --ink-faint:#8b9098; --rule:#d3d6ce; --rule-strong:#b6bab0; --seal:#1b3a6b;
+  --display:"Newsreader",Georgia,serif; --ui:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui)}
+.wrap{max-width:1100px;margin:0 auto;padding:clamp(2rem,6vw,5.5rem) clamp(1.25rem,4vw,3rem)}
+.eyebrow{font-size:.6875rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin:0}
+
+.hero{display:grid;grid-template-columns:1fr;gap:clamp(2.5rem,5vw,3.5rem);align-items:start}
+@media(min-width:940px){.hero{grid-template-columns:1fr 1fr}}
+
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,4.6vw,3.1rem);line-height:1.12;margin:1.25rem 0 0;letter-spacing:-.01em;text-wrap:balance}
+h1 .q{font-style:italic;color:var(--ink-soft)}
+h1 .a{display:block;color:var(--seal);margin-top:.2em}
+.lede{max-width:34ch;margin:1.6rem 0 0;font-size:.9375rem;line-height:1.65;color:var(--ink-soft)}
+
+/* ---- the mechanism: a text being cut into positions ---- */
+.doc{background:var(--paper-raised);border:1px solid var(--rule);padding:0}
+.doc ol{list-style:none;margin:0;padding:0}
+.doc li{
+  display:grid;grid-template-columns:2.25rem 1fr;gap:.25rem;
+  padding:.85rem 1rem .85rem 0;position:relative;
+}
+/* the cut: a hairline that draws itself between paragraphs */
+.doc li+li::before{
+  content:"";position:absolute;left:0;top:0;height:1px;width:100%;
+  background:var(--rule);transform:scaleX(0);transform-origin:left;
+  animation:cut .5s cubic-bezier(.2,.7,.3,1) forwards;animation-delay:var(--d);
+}
+@keyframes cut{to{transform:scaleX(1)}}
+
+.doc .n{
+  font-family:var(--mono);font-size:.6875rem;color:var(--ink-faint);text-align:right;
+  padding-right:.75rem;padding-top:.28rem;opacity:0;
+  animation:fade .4s ease forwards;animation-delay:var(--d);
+}
+.doc p{
+  margin:0;font-family:var(--display);font-size:.9375rem;line-height:1.55;
+  color:var(--ink-soft);
+}
+@keyframes fade{to{opacity:1}}
+
+/* the one that is proven */
+.doc li.hit{background:#fff}
+.doc li.hit p{color:var(--ink)}
+.doc li.hit .n{color:var(--seal);font-weight:500}
+.doc li.hit::after{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--seal);
+  transform:scaleY(0);transform-origin:top;
+  animation:mark .45s cubic-bezier(.2,.7,.3,1) forwards;animation-delay:var(--dm);
+}
+@keyframes mark{to{transform:scaleY(1)}}
+
+/* the comb: position in the whole */
+.comb{margin-top:1.1rem;display:flex;align-items:flex-end;gap:2px;height:2.25rem;border-bottom:1px solid var(--rule-strong)}
+.comb i{flex:1;background:var(--rule);height:34%;transform:scaleY(0);transform-origin:bottom;
+  animation:tick .35s cubic-bezier(.2,.9,.3,1) forwards;animation-delay:var(--d)}
+.comb i.on{background:var(--seal);height:100%}
+@keyframes tick{to{transform:scaleY(1)}}
+.combcap{margin-top:.55rem;display:flex;justify-content:space-between}
+.combcap b{font-family:var(--mono);font-weight:500;color:var(--seal);font-size:.8125rem}
+.combcap b span{color:var(--ink-faint)}
+
+@media(prefers-reduced-motion:reduce){
+  .doc li+li::before,.doc .n,.doc li.hit::after,.comb i{animation:none;transform:none;opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Citable · Register mit Positionsbeweis</p>
+      <h1>
+        Nicht <span class="q">ist dieses Zitat echt?</span>
+        <span class="a">Hier ist der Beweis, dass ich richtig zitiert habe.</span>
+      </h1>
+      <p class="lede">
+        Eine Aussage wird an den Leerzeilen getrennt. Jeder Absatz wird an seine Position
+        gebunden — und genau diese Position ist das, was ein Zitat verliert, wenn man es
+        herausschneidet.
+      </p>
+    </div>
+
+    <figure style="margin:0">
+      <div class="doc">
+        <ol id="doc"></ol>
+      </div>
+      <div class="comb" id="comb" role="img" aria-label="Absatz 5 von 7"></div>
+      <div class="combcap">
+        <span class="eyebrow">Position in der Aussage</span>
+        <b id="count"></b>
+      </div>
+    </figure>
+  </div>
+</div>
+
+<script>
+// Real paragraphs from the statement registered under wochenzeitung.eth, not lorem.
+// The hero shows the product doing its one thing: cutting a text into positions and
+// pointing at one of them.
+(function () {
+  const PARAS = [
+    "Die Behauptung, das Gesetz sei ohne Anhörung beschlossen worden, ist falsch.",
+    "Am 14. März fand eine öffentliche Anhörung mit siebzehn Sachverständigen statt.",
+    "Eingeladen waren neun Verbände, fünf Hochschulen und drei Aufsichtsbehörden.",
+    "Richtig ist, dass die Frist zwischen Anhörung und Abstimmung kurz war.",
+    "Von den siebzehn Sachverständigen haben elf schriftlich Stellung genommen.",
+    "Wir halten diese Frist weiterhin für zu kurz.",
+    "Wer daraus macht, es habe gar keine Anhörung gegeben, zitiert uns falsch."
+  ];
+  const HIT = 4; // zero-based: paragraph 5
+
+  const doc = document.getElementById("doc");
+  PARAS.forEach((text, i) => {
+    const li = document.createElement("li");
+    if (i === HIT) li.className = "hit";
+    li.style.setProperty("--d", (0.12 * i + 0.15) + "s");
+    li.style.setProperty("--dm", (0.12 * PARAS.length + 0.35) + "s");
+    li.innerHTML = '<span class="n">' + (i + 1) + '</span><p></p>';
+    li.querySelector("p").textContent = text;
+    doc.appendChild(li);
+  });
+
+  const comb = document.getElementById("comb");
+  PARAS.forEach((_, i) => {
+    const tick = document.createElement("i");
+    if (i === HIT) tick.className = "on";
+    tick.style.setProperty("--d", (0.12 * PARAS.length + 0.5 + 0.05 * i) + "s");
+    comb.appendChild(tick);
+  });
+
+  document.getElementById("count").innerHTML = (HIT + 1) + '<span> / ' + PARAS.length + '</span>';
+})();
+</script>
+</body>
+</html>
