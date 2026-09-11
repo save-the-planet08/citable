@@ -30,6 +30,10 @@ export function Stage3({ corpus, claim }: { corpus: Scanned[]; claim: string }) 
     try {
       setResult(await coverage(flat.map((f) => f.text), claim, setProgress));
     } catch (e) {
+      // The stack goes to the console on purpose: stage 3 pulls two models over the
+      // network into a wasm runtime, and "it did not run" is useless to whoever has to
+      // find out why. The reader gets the sentence, the developer gets the trace.
+      console.error("stage 3 failed:", e instanceof Error ? e.stack : e);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setRunning(false);

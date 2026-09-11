@@ -67,6 +67,39 @@ export type Coverage =
    */
   | { kind: "guarded"; index: number; paragraph: string; blocked: string[] };
 
+/**
+ * transformers.js is fetched at runtime instead of being bundled, and that is forced
+ * rather than chosen.
+ *
+ * Its entry module decides at import time whether it is running on a server:
+ *
+ *   import fs from 'fs';
+ *   const FS_AVAILABLE = !isEmpty(fs);           // env.js:36
+ *
+ * Turbopack compiles a bare node builtin in a browser bundle to `void 0` — a substitution
+ * `resolveAlias` cannot override — so that line becomes `Object.keys(void 0)` and the
+ * library throws on evaluation, before a single byte of any model is fetched.
+ *
+ * The CDN build is the one the project publishes for browsers and has the problem solved.
+ * The cost is real and belongs in the README: stage 3 now depends on jsDelivr for code and
+ * on huggingface.co for weights. Note what it does NOT touch — stages 1 and 2 still need
+ * nothing but the chain and the bytes. It is one more reason stage 3 is a measurement.
+ */
+const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
+
+interface TransformersModule {
+  pipeline: (task: string, model: string, options: object) => Promise<unknown>;
+  AutoTokenizer: { from_pretrained: (model: string, options: object) => Promise<unknown> };
+  AutoModelForSequenceClassification: {
+    from_pretrained: (model: string, options: object) => Promise<unknown>;
+  };
+  env: { allowLocalModels: boolean };
+}
+
+function loadTransformers(): Promise<TransformersModule> {
+  return import(/* turbopackIgnore: true */ /* webpackIgnore: true */ TRANSFORMERS_URL) as Promise<TransformersModule>;
+}
+
 type Extractor = (text: string, options: object) => Promise<{ data: Float32Array }>;
 type Tokenizer = (text: string, options: object) => Promise<object>;
 type Classifier = ((inputs: object) => Promise<{ logits: { data: Float32Array } }>) & {
@@ -95,9 +128,8 @@ export function modelsReady(): boolean {
  */
 export function loadModels(onProgress?: (p: Progress) => void): Promise<Models> {
   models ??= (async () => {
-    const { pipeline, AutoTokenizer, AutoModelForSequenceClassification, env } = await import(
-      "@xenova/transformers"
-    );
+    const { pipeline, AutoTokenizer, AutoModelForSequenceClassification, env } =
+      await loadTransformers();
     // No local model directory to look in — this runs in a browser, the hub is the source.
     env.allowLocalModels = false;
 
@@ -112,21 +144,28 @@ export function loadModels(onProgress?: (p: Progress) => void): Promise<Models> 
 
     const extract = (await pipeline("feature-extraction", EMBED_MODEL, {
       progress_callback: report("candidate search"),
-    })) as unknown as Extractor;
+    })) as Extractor;
 
     const tokenize = (await AutoTokenizer.from_pretrained(NLI_MODEL, {
       progress_callback: report("coverage"),
-    })) as unknown as Tokenizer;
+    })) as Tokenizer;
 
     const classify = (await AutoModelForSequenceClassification.from_pretrained(NLI_MODEL, {
       progress_callback: report("coverage"),
-    })) as unknown as Classifier;
+    })) as Classifier;
 
     // The label order is read off the model rather than assumed. A wrong index here would
-    // silently report the contradiction score as coverage — the worst possible failure.
-    const labels = classify.config.id2label;
+    // silently report the contradiction score as coverage — the worst possible failure, so
+    // this refuses to guess and says what it actually found instead.
+    const labels = classify.config?.id2label;
+    if (!labels || typeof labels !== "object") {
+      throw new Error(
+        `${NLI_MODEL}: no id2label in the model config, so the entailment class cannot be identified. ` +
+          `config keys: ${JSON.stringify(Object.keys(classify.config ?? {}))}`,
+      );
+    }
     const find = (prefix: string) => {
-      const key = Object.keys(labels).find((k) => labels[k].toLowerCase().startsWith(prefix));
+      const key = Object.keys(labels).find((k) => String(labels[k]).toLowerCase().startsWith(prefix));
       if (key === undefined) throw new Error(`${NLI_MODEL} has no ${prefix} label: ${JSON.stringify(labels)}`);
       return Number(key);
     };
