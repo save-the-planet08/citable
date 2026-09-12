@@ -240,7 +240,7 @@ export function RegisterTool() {
         <textarea
           className="field font-display text-base leading-relaxed"
           rows={12}
-          placeholder={"Erster Absatz.\n\nZweiter Absatz."}
+          placeholder={"First paragraph.\n\nSecond paragraph."}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
@@ -259,7 +259,7 @@ export function RegisterTool() {
       >
         <input
           className="field text-base"
-          placeholder="wochenzeitung.eth"
+          placeholder="yourname.eth"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           spellCheck={false}

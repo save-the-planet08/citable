@@ -7,12 +7,22 @@
  * are put to it, with the numbers that were actually measured, including the one it gets
  * wrong. Every figure below is in CONCEPT.md or WALKTHROUGH.md; none is illustrative.
  *
+ * The source paragraph is German and stays German: the whole demonstration is a German
+ * sentence quoted in English, and the measured figures belong to those exact strings.
+ * Replacing them with English would mean either inventing numbers or reporting numbers for
+ * text that was never scored. Every German line therefore carries a plain English gloss, so
+ * nothing on the page is unreadable to a reader who has no German.
+ *
  * No motion. The section is a table of results, and results that slide in are being sold.
  */
 
-const PARAGRAPH = "Im vergangenen Quartal stieg der Umsatz um vier Prozent.";
+const PARAGRAPH = {
+  de: "Im vergangenen Quartal stieg der Umsatz um vier Prozent.",
+  en: "Last quarter, revenue rose by four percent.",
+};
 
 type Tone = "seal" | "measure" | "amber" | "alarm";
+type Lang = "de" | "en" | "es";
 
 const TONE: Record<Tone, { color: string; tint?: string; hatched?: boolean }> = {
   seal: { color: "var(--seal)", tint: "var(--seal-tint)" },
@@ -23,6 +33,9 @@ const TONE: Record<Tone, { color: string; tint?: string; hatched?: boolean }> = 
 
 const QUERIES: {
   query: string;
+  lang: Lang;
+  /** Plain English, for every line that is not already in it. */
+  gloss?: string;
   how: string;
   verdict: string;
   score?: string;
@@ -31,14 +44,17 @@ const QUERIES: {
 }[] = [
   {
     query: "Im vergangenen Quartal stieg der Umsatz um vier Prozent.",
-    how: "The paragraph itself",
+    lang: "de",
+    gloss: "Last quarter, revenue rose by four percent.",
+    how: "The paragraph itself, word for word",
     verdict: "Proven",
     tone: "seal",
     why: "Stage 1. The leaf and its path go to the contract, which recomputes them. No model is involved and none is needed.",
   },
   {
     query: "Revenue rose by four percent last quarter.",
-    how: "English",
+    lang: "en",
+    how: "Translated into English",
     verdict: "Covered",
     score: "83 %",
     tone: "measure",
@@ -46,7 +62,9 @@ const QUERIES: {
   },
   {
     query: "Los ingresos aumentaron un cuatro por ciento el trimestre pasado.",
-    how: "Spanish",
+    lang: "es",
+    gloss: "The same sentence, translated into Spanish.",
+    how: "Translated into Spanish",
     verdict: "Not covered",
     score: "56 %",
     tone: "amber",
@@ -54,6 +72,8 @@ const QUERIES: {
   },
   {
     query: "Im vergangenen Quartal stieg der Umsatz um vierzig Prozent.",
+    lang: "de",
+    gloss: "Last quarter, revenue rose by FORTY percent.",
     how: "One word changed: forty instead of four",
     verdict: "Not scored at all",
     tone: "alarm",
@@ -61,6 +81,8 @@ const QUERIES: {
   },
   {
     query: "Roth hat zugegeben, dass die Zahlen manipuliert wurden.",
+    lang: "de",
+    gloss: "Roth has admitted that the figures were manipulated.",
     how: "An admission that was never made",
     verdict: "Not covered",
     score: "9 %",
@@ -79,7 +101,8 @@ export function SameMeaning() {
       <p className="mt-5 max-w-[60ch] text-[1.0625rem] leading-relaxed" style={{ color: "var(--ink-soft)" }}>
         A German sentence quoted in an English paper shares no characters with its source.
         A word-for-word proof has nothing to compare. That is where most of this problem
-        actually lives, and it is the reason stage 3 exists.
+        actually lives, and it is the reason stage 3 exists. The source below is German
+        because the demonstration needs it to be; every line of it is glossed in English.
       </p>
 
       {/* The text everything below is asked about. */}
@@ -91,8 +114,11 @@ export function SameMeaning() {
           Registered · wochenzeitung.eth · paragraph 3 of 6
         </figcaption>
         <blockquote className="mt-3 font-display text-[clamp(1.15rem,2vw,1.5rem)] leading-snug" lang="de">
-          {PARAGRAPH}
+          {PARAGRAPH.de}
         </blockquote>
+        <p className="ui mt-2 text-[13px]" style={{ color: "var(--ink-faint)" }}>
+          {PARAGRAPH.en}
+        </p>
       </figure>
 
       <p className="ui mt-10 text-[12px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-faint)" }}>
@@ -114,7 +140,14 @@ export function SameMeaning() {
                 <p className="ui text-[12px] tracking-[0.1em] uppercase" style={{ color: "var(--ink-faint)" }}>
                   {q.how}
                 </p>
-                <p className="mt-2 font-display text-[1.15rem] leading-snug">{q.query}</p>
+                <p className="mt-2 font-display text-[1.15rem] leading-snug" lang={q.lang}>
+                  {q.query}
+                </p>
+                {q.gloss && (
+                  <p className="ui mt-1.5 text-[13px]" style={{ color: "var(--ink-faint)" }}>
+                    {q.gloss}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -156,8 +189,9 @@ export function SameMeaning() {
           Why it is not a similarity score
         </p>
         <p className="mt-4 max-w-[60ch] font-display text-[clamp(1.15rem,1.9vw,1.45rem)] leading-snug">
-          Measured against the paragraph <span lang="de">“Wurden die Zahlen manipuliert?”</span>,
-          the invented confession scored{" "}
+          Measured against the paragraph <span lang="de">“Wurden die Zahlen manipuliert?”</span>{" "}
+          — <span style={{ color: "var(--ink-soft)" }}>were the figures manipulated?</span> — the
+          invented confession scored{" "}
           <span className="font-mono" style={{ color: "var(--alarm)" }}>
             0.880
           </span>{" "}

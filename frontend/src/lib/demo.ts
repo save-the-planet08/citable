@@ -1,25 +1,21 @@
-// The statement the landing page points at.
+// The statement the tool offers when somebody wants to try it without having a quote.
 //
-// Real, not filler: this is statements/wochenzeitung/anhoerung.txt, registered on Sepolia
-// under wochenzeitung.eth at root 0xa2ea6730…. Somebody who reads the hero and then types
-// one of these paragraphs into the form gets a proof, because it is the same text.
+// Real, not filler: this is statements/frederik/gettysburg.txt, registered on Sepolia under
+// frederik.eth at root 0x78e0a0fd…. Somebody who presses the button and then presses check
+// gets a proof, because it is the same text.
 //
-// Kept here rather than fetched: the hero is in the LCP path and must not wait on a
-// network round trip to say what the product does. What it shows is illustration; the
-// proof still comes from the chain and the bundle, like any other quote.
-export const DEMO_NAME = "wochenzeitung.eth";
+// English on purpose. The interface is English, and a reader who cannot read the sample has
+// been handed a demonstration they cannot follow.
+export const DEMO_NAME = "frederik.eth";
 
-export const DEMO_ROOT = "0xa2ea6730bdfce31305c0b43b999aa2a430cacf97324b3329bd4e56c1891ebc4b";
+export const DEMO_ROOT = "0x78e0a0fde36e33e67a915ba7d3b98750911c4a3afa29cb169230eb2814c4e972";
 
-/** The paragraph the hero points at — the one used in the worked example. */
-export const DEMO_HIT = 4;
+/** The paragraph the sample fills in — the one everybody recognises. */
+export const DEMO_HIT = 0;
 
 export const DEMO_PARAGRAPHS = [
-  "Die Behauptung, das Gesetz sei ohne Anhörung beschlossen worden, ist falsch.",
-  "Am 14. März fand eine öffentliche Anhörung mit siebzehn Sachverständigen statt. Das Protokoll umfasst 240 Seiten und liegt seit dem 20. März öffentlich vor.",
-  "Eingeladen waren neun Verbände, fünf Hochschulen und drei Aufsichtsbehörden. Die Liste der Geladenen stand vier Wochen vorher fest und wurde nicht nachträglich geändert.",
-  "Richtig ist, dass die Frist zwischen Anhörung und Abstimmung kurz war. Vier Werktage sind wenig für eine Vorlage dieses Umfangs, und wir haben das im Ausschuss auch so gesagt.",
-  "Von den siebzehn Sachverständigen haben elf schriftlich Stellung genommen. Zwei dieser Stellungnahmen sind in den Ausschussbericht eingeflossen, die übrigen nicht.",
-  "Wir halten diese Frist weiterhin für zu kurz. Das ist eine Kritik am Verfahren und keine Behauptung, das Verfahren habe nicht stattgefunden.",
-  "Wer daraus macht, es habe gar keine Anhörung gegeben, zitiert uns nicht verkürzt, sondern falsch.",
+  "Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.",
+  "Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.",
+  "But, in a larger sense, we can not dedicate -- we can not consecrate -- we can not hallow -- this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here.",
+  "It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us -- that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion -- that we here highly resolve that these dead shall not have died in vain -- that this nation, under God, shall have a new birth of freedom -- and that government of the people, by the people, for the people, shall not perish from the earth.",
 ] as const;
