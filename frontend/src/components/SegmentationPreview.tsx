@@ -27,6 +27,19 @@ export function SegmentationPreview({
         {segments.length} {segments.length === 1 ? "paragraph" : "paragraphs"}, in this order
       </p>
 
+      {/* The commonest way to register something useless, and it is silent otherwise: a
+          single newline is not a blank line, so a text typed without one becomes a single
+          segment. It registers, it verifies, and it proves nothing about position —
+          "paragraph 1 of 1" is a statement about the whole text. Three statements on chain
+          are in exactly that shape. */}
+      {segments.length === 1 && (
+        <p className="ui mt-2 max-w-xl text-sm leading-relaxed" style={{ color: "var(--amber)" }}>
+          One paragraph means there is no position to prove — every quote from it is
+          “paragraph 1 of 1”. Separate paragraphs with a <strong>blank line</strong> (press
+          Enter twice); a single line break does not split them.
+        </p>
+      )}
+
       <ol className="mt-3 border-t" style={{ borderColor: "var(--rule)" }}>
         {segments.map((s, i) => (
           <li
