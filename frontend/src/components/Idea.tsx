@@ -51,10 +51,11 @@ export function Idea() {
           className="max-w-[70ch] text-[0.9375rem] leading-relaxed"
           style={{ color: "var(--ink-faint)" }}
         >
-          No database, no server, no indexer. The text sits on IPFS, the tree is
-          rebuilt in your browser, and the chain holds 32 bytes. There is
-          deliberately no service here that you have to trust — including this
-          one.
+          No database, no indexer. The text sits on IPFS, the tree is rebuilt in
+          your browser, and the chain holds 32 bytes. Checking a quote needs no
+          service at all — including this one. Publishing uses one, to pin the
+          text so the record points at something; it can go down, it cannot lie,
+          because every bundle is held against the root on the chain.
         </p>
       </div>
     </section>

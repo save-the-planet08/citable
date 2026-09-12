@@ -25,6 +25,7 @@ import { fileURLToPath } from "node:url";
 import { buildBundle, verifyBundle } from "../../lib/citable/bundle.mjs";
 import { buildTree } from "../../lib/citable/tree.mjs";
 import { bundleBytes, bundleCid } from "../../lib/citable/cid.mjs";
+import { pinToPinata } from "../../lib/citable/pinata.mjs";
 
 const ROOT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const deployment = JSON.parse(readFileSync(join(ROOT_DIR, "deployments", "sepolia.json"), "utf8"));
@@ -115,7 +116,7 @@ mkdirSync(publicDir, { recursive: true });
 writeFileSync(join(publicDir, `${added}.json`), bytes);
 console.log(`copy       frontend/public/bundles/${added}.json`);
 
-await pinToPinata(bytes, added);
+await pinBundle(bytes, added);
 
 // ---------------------------------------------------------------------------
 // 5. The chain
@@ -213,33 +214,17 @@ function ipfs(argv) {
 }
 
 /// Additive by design. No JWT means one line of output and no other difference — the CID
-/// was already real before this ran.
-async function pinToPinata(bytes, cid) {
-  const jwt = process.env.PINATA_JWT;
-  if (!jwt) {
+/// was already real before this ran. The upload itself lives in lib/citable/pinata.mjs,
+/// shared with the Vercel function, so the two cannot drift on `cidVersion`.
+async function pinBundle(bytes, cid) {
+  const result = await pinToPinata(bytes, cid, process.env.PINATA_JWT);
+  if (result.status === "unconfigured") {
     console.log("pinata     not configured (PINATA_JWT unset) — the CID is served locally only");
-    return;
-  }
-  const form = new FormData();
-  form.append("file", new Blob([bytes], { type: "application/json" }), `${cid}.json`);
-  form.append("pinataOptions", JSON.stringify({ cidVersion: 1 }));
-
-  const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${jwt}` },
-    body: form,
-  });
-  if (!response.ok) {
-    console.log(`pinata     FAILED: HTTP ${response.status} ${await response.text()}`);
+  } else if (result.status === "pinned") {
+    console.log(`pinata     pinned as ${result.cid}`);
+  } else {
+    console.log(`pinata     ${result.status.toUpperCase()}: ${result.detail}`);
     console.log("           the CID stands; only its reachability from elsewhere does not");
-    return;
-  }
-  const { IpfsHash } = await response.json();
-  console.log(`pinata     pinned as ${IpfsHash}`);
-  // Pinata may wrap the file differently. A different CID is not fatal — it just means
-  // the pin does not serve the CID that goes on chain, so say so rather than imply cover.
-  if (IpfsHash !== cid) {
-    console.log(`           ⚠ that is NOT ${cid} — this pin does not cover the CID on chain`);
   }
 }
 

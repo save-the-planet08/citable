@@ -19,6 +19,26 @@ export function hasWallet(): boolean {
 }
 
 /**
+ * The account this site is already allowed to see, without asking for one.
+ *
+ * `eth_accounts` never opens a prompt — it answers with what the user has already granted,
+ * and with nothing otherwise. That distinction is what lets the register screen show an
+ * author their address and their ENS permission before they commit to anything, instead of
+ * making "connect" a step they have to perform before the page will tell them if they may
+ * publish at all.
+ */
+export async function currentAccount(): Promise<Address | null> {
+  const provider = window.ethereum;
+  if (!provider) return null;
+  try {
+    const [address] = (await provider.request({ method: "eth_accounts" })) as Address[];
+    return address ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Asks for an account and makes sure it is on Sepolia.
  *
  * The chain check is not politeness. Sent to mainnet this transaction would either fail or

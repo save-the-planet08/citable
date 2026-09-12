@@ -150,5 +150,7 @@ werden:
 
 - Stufe 3 zieht Code von jsDelivr und Gewichte von huggingface.co. Stufe 1 und 2 nicht —
   die brauchen nur die Kette und die Bytes.
-- Die Erreichbarkeit der Bündel hängt an **einem** Pinata-Konto.
+- Die Erreichbarkeit der Bündel hängt an **einem** Pinata-Konto — auch für alles, was
+  Fremde über den Registrieren-Screen eintragen. Der pinnt inzwischen selbst
+  (`api/pin.mjs`), und genau das ist der zweite zentrale Punkt neben dem Registry-Owner.
 - 16 Testfälle sind ein Signal, keine Validierung. Spanisch fällt bei Schwelle 0,80 durch.

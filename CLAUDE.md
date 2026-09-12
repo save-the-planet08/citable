@@ -112,9 +112,22 @@ Bibliothek kommt jetzt zur Laufzeit von jsDelivr, die Gewichte von huggingface.c
 eine echte Abhängigkeit und steht so im README. Stufe 1 und 2 sind davon nicht berührt.
 
 **Registrieren-Screen steht.** Der Browser rechnet für `anhoerung.txt` dieselbe Wurzel und
-dieselbe CID wie `script/js/publish.mjs` — geprüft, nicht angenommen. Schritt 3 (Bündel
-herunterladen) ist Pflicht, weil die Seite keinen Pinning-Schlüssel hat: wer ohne die Bytes
-registriert, legt einen toten Link mit Zeitstempel auf die Kette.
+dieselbe CID wie `script/js/publish.mjs` — geprüft, nicht angenommen.
+
+**Der Screen pinnt jetzt selbst** (`api/pin.mjs`, Vercel-Function im Repo-Root neben dem
+statischen Export — `vercel.json` hat `framework: null`, deshalb geht das ohne `output:
+"export"` aufzugeben). Der Download-Zwang war die falsche Antwort: **drei Aussagen stehen
+unter `wochenzeitung.eth` auf der Kette, deren CIDs niemand ausliefert** (Blöcke 11683037,
+11683057, 11687989 — Pinata antwortet 403, alle drei mit nur *einem* Segment, also ohne
+Leerzeile getippt). Niemand lädt einen Downloads-Ordner freiwillig auf IPFS. Jetzt gilt:
+erst pinnen, dann Transaktion. Scheitert das Pinnen, geht **keine** Transaktion raus und
+der alte Hand-Weg kommt als Rückfall zurück. `script/js/pin.mjs` reicht Bündel nach.
+
+**Drei Schritte statt vier:** Text, Name, ein Knopf. Der Knopf verbindet die Wallet selbst,
+pinnt und sendet. Eine bereits erlaubte Wallet wird beim Laden still erkannt
+(`eth_accounts`, kein Popup), deshalb steht die ENS-Erlaubnis auf dem Schirm, bevor man
+etwas anklickt. Bei einem einzigen Segment warnt der Screen jetzt — das war der Fehler
+hinter allen drei toten Einträgen, und er war vorher unsichtbar.
 
 **Landingpage:** fünf Abschnitte, zwei davon bewegt — der Baum zeichnet sich von den
 Blättern aufwärts (die Reihenfolge, in der er gerechnet wird), und die Behauptung steht
@@ -129,9 +142,16 @@ unbewegt. Geprüft auf 1440 und 390 und mit `prefers-reduced-motion`.
 | `ENSv2NameGuard` | `0x67732407626BCb5D5610887EC97782c610F5E8d2` |
 | `owner` (immutable) | `0x5b5Bd6a1523612B67C32D4aDC8b52766d0085D19` |
 
-**Offen und nur von Frederik zu lösen:** Pinata-Konto (`PINATA_JWT` in `.env`, dann pinnt
-`publish.mjs` zusätzlich dorthin — sonst hält nur die App-eigene Kopie die CIDs), Vercel,
-Video, Einreichungsformular. Alle vier sind Konfiguration, kein Umbau.
+**Offen und nur von Frederik zu lösen:** `PINATA_JWT` als Vercel-Env-Var (**ohne**
+`NEXT_PUBLIC_`-Präfix — sonst liegt der Schlüssel im Browser-Bundle; ohne ihn verlangt der
+Registrieren-Screen wieder den Download), Vercel-Deploy, Video, Einreichungsformular. Alle
+vier sind Konfiguration, kein Umbau. `.env.example` führt `PINATA_JWT` noch nicht — die
+Datei ist hier durch Berechtigungen gesperrt, der Eintrag fehlt also und gehört nachgetragen.
+
+**Beim ersten Deploy zu prüfen:** ob Vercel `api/pin.mjs` wirklich als Function baut.
+`curl -i -X POST https://<domain>/api/pin` muss `405 POST a bundle here.` liefern. Kommt
+HTML zurück, greift die `api/`-Konvention neben `outputDirectory` nicht und es braucht
+einen expliziten `functions`-Eintrag in `vercel.json`.
 
 **Noch nicht gebaut:** Author-Screen (steht ohnehin auf der Streichliste). Zwei
 Hero-Varianten liegen zur Wahl in `design/hero/` — gebaut ist Variante D.
@@ -211,8 +231,15 @@ gebaut. Es soll keinen Dienst geben, dem man vertrauen muss.
   `access-control-allow-origin: *`; das geteilte `gateway.pinata.cloud` liefert es nicht.
   Die Erreichbarkeit hängt damit an **einem Konto** — besser als ein Ursprung, aber noch
   nicht viele.
-- Der Registrieren-Screen pinnt nicht. Er hat keinen Schlüssel, lädt nichts hoch und
-  verlangt deshalb den Download, bevor er die Transaktion anbietet.
+- Der Registrieren-Screen pinnt über einen Dienst, der dem Betreiber gehört. Ein Browser
+  darf keinen Schlüssel halten, also hält ihn `api/pin.mjs`. Zweiter zentraler Punkt neben
+  dem Registry-Owner. Fälschen kann er nichts — jedes Bündel hängt über `verifyBundle` an
+  der Wurzel auf der Kette —, aber verweigern kann er.
+- Der Pinning-Endpunkt ist offen: kein Konto, kein Rate-Limit. Die Bündelprüfung verhindert
+  beliebige Datei-Uploads, nicht das Vollschreiben des Kontingents mit Unsinnstexten.
+- Aus dem Browser registrierte Bündel bekommen **keine** Kopie in
+  `frontend/public/bundles/` — die schreiben nur die Skripte gegen das Repo. Sie hängen
+  also an einer einzigen Quelle, bis `script/js/pin.mjs` nachreicht.
 - Das Kaltstart-Problem bleibt ungelöst.
 
 ## KI-Nutzung

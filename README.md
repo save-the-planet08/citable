@@ -63,8 +63,10 @@ Paragraphs are unambiguous. This costs granularity and saves a day of debugging.
 
 Publicly readable, writable without permission, and not retroactively alterable by anyone.
 A registry run by a company would introduce exactly the central authority this project
-exists to avoid. There is no database and no server: the verifier fetches the text, rebuilds
-the tree locally and produces the proof themselves.
+exists to avoid. There is no database and no indexer, and verifying needs no service at
+all: the verifier fetches the text, rebuilds the tree locally and produces the proof
+themselves. Publishing uses one small server-side helper, for reachability only — see
+[Where the bundle actually lives](#where-the-bundle-actually-lives).
 
 ## Identity: who may claim a name
 
@@ -170,6 +172,7 @@ name in the ENSv2 registry above.
 node script/js/ens-register.mjs <label> --broadcast          # get a real ENSv2 name
 node script/js/publish.mjs <textfile> --name=<label>          # simulate the whole path
 node script/js/publish.mjs <textfile> --name=<label> --broadcast
+node script/js/pin.mjs <bundle.json>                          # pin a bundle built elsewhere
 ```
 
 `publish.mjs` refuses to send anything until three things hold: the CID this repo computes
@@ -200,7 +203,41 @@ in trust, and the screen names the source it used.
 | A pinning service | Set `PINATA_JWT` in `.env` and `publish.mjs` pins there too. Nothing else changes. |
 | This app's own copy | `frontend/public/bundles/<cid>.json`, written on every publish. Last in the race, and labelled as such on screen. |
 
-Both bundles are pinned. Pinata returns the identical CID for them — `cidVersion: 1` on a
+### Who does the pinning
+
+`publish.mjs` pins from a laptop that has the key. The register screen in the browser does
+not have one and must not — anything in a page is readable by whoever opens it. It used to
+answer that by making the author download the bundle and pin it by hand, and that does not
+work: three statements are on chain under `wochenzeitung.eth` whose CIDs no node serves,
+registered through exactly that screen.
+
+So `api/pin.mjs` holds the key server-side and pins on the author's behalf, **before** the
+transaction is offered. The order is the whole fix — reversed, the CID is immutable before
+the bytes exist anywhere.
+
+The screen is three steps now: the text, the name, and one button that connects a wallet if
+needed, pins, and sends. Keeping a copy of the bundle is still offered, as an answer to
+"what if this deployment's pin lapses" rather than as a step. It becomes a requirement
+again — and the button refuses to send — only when the pinning actually failed.
+
+The function accepts a bundle only if it rebuilds the root the client states, using the
+same `verifyBundle` a verifier runs (`lib/citable/bundle.mjs`). It pins the bytes exactly as
+received, never a re-serialised object: `bundleBytes` writes JSON in object order, so a
+round trip through an object could move the CID. The browser then holds the CID it gets
+back against the one it computed itself and refuses to register if they differ.
+
+None of this is trust. The function can make a bundle reachable or fail to; it cannot make
+a false one pass, because a bundle is anchored by the root on chain and a tampered one
+loses the race in `frontend/src/lib/ipfs.ts`. It is, however, a second point of
+centralisation next to the registry owner — listed under [Limitations](#limitations).
+
+A bundle registered through the browser gets **no** `frontend/public/bundles/` copy; that
+file is written by the publishing scripts, which run against the repo. Browser-registered
+statements therefore hang on the pinning service alone. `script/js/pin.mjs <bundle.json>`
+pins an existing bundle after the fact and writes that second copy — it is how the three
+dead CIDs above get revived, and it refuses any file whose bytes do not reproduce its CID.
+
+The bundles published from the repo are pinned. Pinata returns the identical CID for them — `cidVersion: 1` on a
 file this small produces the same single raw block `ipfs add` does, so the pin really does
 cover what is on chain, which was not obvious in advance and had to be measured. The
 dedicated gateway answers with `access-control-allow-origin: *`, so a browser can read it;
@@ -221,13 +258,21 @@ npm run dev
 |---|---|
 | `NEXT_PUBLIC_SEPOLIA_RPC_URL` | Optional. Without it viem uses a public Sepolia endpoint, which is rate limited. |
 | `NEXT_PUBLIC_IPFS_GATEWAYS` | Optional. Comma-separated gateway prefixes, tried before the local copy. |
+| `PINATA_JWT` | Server-side only, no `NEXT_PUBLIC_` prefix. Without it the register screen falls back to asking the author to download and pin the bundle by hand. |
 
-Everything is client-side; there is no server component and no API route. `lib/citable/` is
-imported through an alias, never copied — a second copy of the leaf formula is exactly the
-drift `test/ProofBridge.t.sol` exists to prevent.
+Reading is entirely client-side. The one exception is on the write path: `api/pin.mjs`
+pins a bundle before the transaction is offered, because a browser cannot hold a pinning
+key. It is a Vercel function at the repo root, not a route of this app — the export stays
+`output: "export"`. Under `next dev` it is not there at all and the screen says so;
+`vercel dev` runs it.
 
-Stage 3 downloads about 400 MB of models on first use and only when asked. Nothing is
-uploaded, and nothing is downloaded before the button is pressed.
+`lib/citable/` is imported through an alias, never copied — a second copy of the leaf
+formula is exactly the drift `test/ProofBridge.t.sol` exists to prevent.
+
+Stage 3 downloads about 400 MB of models on first use and only when asked. Nothing is sent
+anywhere for it, and nothing is downloaded before the button is pressed. The one upload
+this app ever makes is the bundle on the register screen, and only on the click that
+registers it.
 
 ## Limitations
 
@@ -265,12 +310,21 @@ uploaded, and nothing is downloaded before the button is pressed.
   client that computes them itself with a named model has to trust the publisher's numbers
   even less than CONCEPT.md 3 assumes. What it costs is time, not trust — the browser
   already has the embedding model loaded to embed the query.
-- **The register screen does not pin.** It has no key and uploads nothing, so it makes the
-  author download the bundle and refuses to offer the transaction until they have. An
-  author who registers without keeping the bytes has put a dead link on chain.
+- **The register screen pins through a server the deployment owns.** A browser cannot hold
+  a pinning key, so `api/pin.mjs` holds one and pins before the transaction goes out. That
+  is a second point of centralisation next to the registry owner. It cannot forge anything
+  — a bundle is anchored by `verifyBundle` against the root on chain — but it can refuse,
+  and then the screen falls back to making the author download and pin by hand. Before
+  this existed, that fallback *was* the whole mechanism, and three statements went on
+  chain with CIDs nobody serves because of it.
+- **The pinning endpoint is open.** It takes any well-formed bundle, which keeps it from
+  being a general file host but does not stop anyone from filling the pinning quota with
+  bundles over junk text. There is no rate limit and no account. Known and not fixed.
 - **Availability still rests on one pinning account.** The bundles are pinned and a public
   gateway serves them, but if that account lapses the only remaining holder is the copy the
-  app ships. Better than one origin, not yet many.
+  app ships — and statements registered through the browser have no such copy, because it
+  is written by the publishing scripts against the repo. `script/js/pin.mjs` adds one after
+  the fact. Better than one origin, not yet many.
 - **The contract cannot check that the CID matches the root.** It never sees the text. A
   mismatch makes the statement unverifiable, so lying only hurts the author.
 - Paragraph granularity, not sentence granularity.

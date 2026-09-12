@@ -290,7 +290,16 @@ gehört.
 | **IPFS** | Volltext, Segmente, Vektoren, Modellkennung | zu groß für die Kette, über CID manipulationssicher |
 | **Client** | Baumbau, Beweis, Vektorvergleich | kein Dienst, dem man vertrauen muss |
 
-Keine Datenbank. Kein Server. Kein Indexer.
+Keine Datenbank. Kein Indexer. **Prüfen** braucht keinen Dienst — das ist die Aussage, die
+trägt, und sie gilt unverändert.
+
+**Veröffentlichen** braucht einen kleinen: `api/pin.mjs` hält den Pinning-Schlüssel, den
+ein Browser nicht halten darf, und pinnt das Bündel, bevor die Transaktion angeboten wird.
+Ohne das trägt der Autor eine CID auf die Kette, die ins Leere zeigt — drei Aussagen unter
+`wochenzeitung.eth` sind genau so entstanden. Der Dienst kauft Erreichbarkeit, nicht
+Vertrauen: fälschen kann er nichts, weil jedes Bündel über `verifyBundle` an der Wurzel auf
+der Kette hängt. Er ist trotzdem ein zweiter zentraler Punkt neben dem Registry-Owner und
+steht so in den Grenzen.
 
 ---
 
