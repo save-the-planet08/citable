@@ -124,6 +124,53 @@ h3 {
   color: var(--ink-faint);
 }
 
+/* ---------------------------------------------------------------------------
+ * The hero's one entrance.
+ *
+ * CSS only and no library: the hero is the LCP, so nothing here may wait on JavaScript.
+ * Every rule has a finished state that is also the correct state, so removing the
+ * animation under prefers-reduced-motion leaves the hero complete rather than empty.
+ * ------------------------------------------------------------------------ */
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.enter {
+  opacity: 0;
+  animation: hero-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+/* The headline arrives a line at a time, from under its own baseline. The mask needs room
+ * for descenders or the serif loses its tails while it travels. */
+.line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.09em;
+  margin-bottom: -0.09em;
+}
+
+.line > span {
+  display: block;
+  transform: translateY(108%);
+  animation: hero-line 0.9s cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes hero-line {
+  to {
+    transform: none;
+  }
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -143,6 +190,14 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .rise {
     animation: none;
+  }
+
+  /* The end state is the correct state, so dropping the animation is the whole fix. */
+  .enter,
+  .line > span {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 
   *,
