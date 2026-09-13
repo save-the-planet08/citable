@@ -171,6 +171,97 @@ h3 {
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * The one moment in the hero.
+ *
+ * A quotation card that cannot be checked is stamped and replaced, in the same place, by
+ * one that can. Two states, one swap, and then it rests on the proof. All of it is CSS
+ * with delays — the hero is the LCP element and waits on no script.
+ * ------------------------------------------------------------------------ */
+
+@keyframes stamp-slam {
+  from {
+    opacity: 0;
+    transform: rotate(-9deg) scale(2.3);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* The forgery does not slide away politely; it drops out of true first. */
+@keyframes card-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(14px) rotate(-1.4deg) scale(0.97);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes seal-in {
+  from {
+    opacity: 0;
+    transform: rotate(-6deg) scale(1.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-6deg) scale(1);
+  }
+}
+
+.moment > * {
+  grid-area: 1 / 1;
+}
+
+.m-stamp {
+  opacity: 0;
+  animation:
+    stamp-slam 0.26s cubic-bezier(0.3, 1.5, 0.5, 1) 1.9s forwards,
+    fade-out 0.4s ease 4.3s forwards;
+}
+
+.m-note {
+  opacity: 0;
+  animation:
+    hero-in 0.45s ease-out 2.15s forwards,
+    fade-out 0.4s ease 4.3s forwards;
+}
+
+.m-fake {
+  animation: card-out 0.55s cubic-bezier(0.4, 0, 0.7, 0.4) 4.3s forwards;
+}
+
+.m-record {
+  opacity: 0;
+  animation: card-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 4.5s forwards;
+}
+
+.m-seal {
+  opacity: 0;
+  animation: seal-in 0.26s cubic-bezier(0.3, 1.5, 0.5, 1) 5.05s forwards;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -194,10 +285,21 @@ h3 {
 
   /* The end state is the correct state, so dropping the animation is the whole fix. */
   .enter,
-  .line > span {
+  .line > span,
+  .m-record,
+  .m-seal {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  /* Still, the moment resolves to its end: the forgery is simply not there, and the
+   * record and its seal are. Nothing is lost but the swap. */
+  .m-fake,
+  .m-stamp,
+  .m-note {
+    animation: none;
+    display: none;
   }
 
   *,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Masthead } from "@/components/Masthead";
+import { ProofFlip } from "@/components/ProofFlip";
 
 /**
  * The first screen says what this is, shows one piece of what it produces, and offers the
@@ -12,15 +13,6 @@ import { Masthead } from "@/components/Masthead";
  * The entrance is CSS with staggered delays — the hero is the LCP element and must not wait
  * on a script. Under prefers-reduced-motion every rule resolves to its finished state.
  */
-
-/** One registered paragraph, exactly as the tool below reports it. */
-const PROOF = {
-  passage:
-    "…that government of the people, by the people, for the people, shall not perish from the earth.",
-  name: "frederik.eth",
-  index: 4,
-  total: 4,
-};
 
 export function Hero() {
   return (
@@ -93,65 +85,10 @@ export function Hero() {
             </p>
           </div>
 
-          {/* What the tool hands back, shown once. */}
-          <figure
-            className="enter m-0"
-            style={{ "--d": "0.62s" } as React.CSSProperties}
-          >
-            <div
-              className="border-l-4 border-y border-r px-7 py-7 sm:px-9 sm:py-9"
-              style={{ borderColor: "var(--rule-strong)", borderLeftColor: "var(--seal)", background: "#ffffff" }}
-            >
-              <div className="flex items-start justify-between gap-6">
-                <p className="eyebrow">Registered statement</p>
-                <span
-                  className="ui shrink-0 border px-3 py-1 text-[11px] font-semibold tracking-[0.12em]"
-                  style={{ borderColor: "var(--seal)", color: "var(--seal)" }}
-                >
-                  PROVEN
-                </span>
-              </div>
-
-              <blockquote className="mt-5 font-display text-[clamp(1.1rem,1.5vw,1.3rem)] leading-snug">
-                “{PROOF.passage}”
-              </blockquote>
-
-              {/* The position is what a quotation loses when it is lifted out, so it is
-                  numbered rather than drawn as bars — bars of unequal height read as a
-                  chart that is still loading. */}
-              <div className="mt-7 flex gap-1.5">
-                {Array.from({ length: PROOF.total }, (_, i) => {
-                  const here = i === PROOF.index - 1;
-                  return (
-                    <span
-                      key={i}
-                      className="ui flex-1 py-2 text-center text-[12px] font-medium"
-                      style={{
-                        background: here ? "var(--seal)" : "transparent",
-                        border: `1px solid ${here ? "var(--seal)" : "var(--rule)"}`,
-                        color: here ? "var(--paper-raised)" : "var(--ink-faint)",
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                  );
-                })}
-              </div>
-              <p className="ui mt-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: "var(--ink-faint)" }}>
-                Paragraph {PROOF.index} of {PROOF.total}
-              </p>
-
-              <p
-                className="ui mt-6 border-t pt-4 text-[13px] leading-relaxed"
-                style={{ borderColor: "var(--rule)", color: "var(--ink-soft)" }}
-              >
-                Published under <span className="font-mono">{PROOF.name}</span> on Sepolia.
-                Anyone can rebuild this from the bundle and check it against the chain.
-              </p>
-            </div>
-            <figcaption className="ui mt-3 text-[12.5px]" style={{ color: "var(--ink-faint)" }}>
-              Proves the paragraph and where it stood — not that the statement is true.
-            </figcaption>
+          {/* The one moment: a quotation nobody can check, replaced in the same place by
+              one anybody can. */}
+          <figure className="enter m-0" style={{ "--d": "0.62s" } as React.CSSProperties}>
+            <ProofFlip />
           </figure>
         </div>
       </div>
