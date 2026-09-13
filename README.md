@@ -208,7 +208,9 @@ failure `api/pin.mjs` exists to prevent. They stay, because nothing on chain can
 | Verify screen, stages 1 and 2, search by ENS name without an indexer | ✅ live |
 | Stage 3 in the browser | ✅ live, reproduces the measured numbers |
 | Register screen, pinning before the transaction | ✅ live |
-| Author screen | ❌ not built — cut for time |
+| Frontend deployed | ✅ [citable-pi.vercel.app](https://citable-pi.vercel.app/) |
+| Statements by author | ✅ enter an author address in *Check a quote* |
+| Demo video | ✅ |
 
 CI runs `forge fmt --check`, `forge build` and `forge test` on every push
 ([`.github/workflows/test.yml`](.github/workflows/test.yml)).
