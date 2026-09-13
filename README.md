@@ -1,354 +1,356 @@
 # Citable
 
-**Verifiable publishing with position proofs — and an honest answer when there is no proof.**
+**Anyone can invent a quotation. Now you can prove you didn't.**
 
-ETHOnline 2026 · Track: Start Fresh · Sepolia
+A register of statements on Ethereum. A statement is cut into paragraphs, each paragraph is
+bound to its position, and only the root of that tree goes on chain. Whoever quotes from it
+can hand over a proof with the quote: *this passage, word for word, at paragraph 5 of 7, in
+this text, on this date.* When there is no word-for-word match, Citable says so — and
+measures, openly labelled as a measurement, whether a translation or paraphrase is covered
+by the text.
+
+**[Live app →](https://citable-pi.vercel.app/)** ·
+[Registry on Etherscan](https://sepolia.etherscan.io/address/0xd3b137b6c6f572290cf91ac312319364822792e7#code) ·
+[Name guard](https://sepolia.etherscan.io/address/0x67732407626bcb5d5610887ec97782c610f5e8d2#code) ·
+ETHOnline 2026 · Sepolia
+
+![The Citable landing page: "Anyone can invent a quotation. Now you can prove you didn't." next to a registered statement shown at paragraph 4 of 4](design/screenshots/hero.png)
 
 ---
+
+## Contents
+
+- [Try it in a minute](#try-it-in-a-minute)
+- [The problem](#the-problem)
+- [How it works](#how-it-works)
+- [What lives where](#what-lives-where)
+- [Identity: who may publish under a name](#identity-who-may-publish-under-a-name)
+- [Deployments](#deployments)
+- [Status](#status)
+- [Repository layout](#repository-layout)
+- [Run it locally](#run-it-locally)
+- [Limitations](#limitations)
+- [Prior art](#prior-art) · [AI usage](#ai-usage) · [License](#license)
+
+---
+
+## Try it in a minute
+
+Open **[citable-pi.vercel.app](https://citable-pi.vercel.app/)**, go to *Check a quote*,
+enter the name and paste the quote. Every row below was run against the live site on
+13.09.2026; the answers are the ones it gave.
+
+| Who | Quote | Answer |
+|---|---|---|
+| `wochenzeitung.eth` | `Von den siebzehn Sachverständigen haben elf schriftlich Stellung genommen. Zwei dieser Stellungnahmen sind in den Ausschussbericht eingeflossen, die übrigen nicht.` | **PROVEN** — paragraph 5 of 7, both neighbours shown |
+| `wochenzeitung.eth` | the same, with `elf` changed to `zwölf` | **NOT FOUND** — one word, and the proof is gone |
+| `wochenzeitung.eth` | `Vier Werktage sind wenig für eine Vorlage dieses Umfangs` | **PART OF A PARAGRAPH** — paragraph 4 of 7, with the context that was cut |
+| `wochenzeitung.eth` | `Wir haben das Gesetz im Alleingang durchgewunken.` | **NOT FOUND** — with the denominator: the statements searched and the paragraphs compared |
+| `tagesschau.eth` | anything | **NOTHING REGISTERED** — explicitly not "made up" |
+| `wochenzeitung.eth` | `Revenue rose by four percent last quarter.` → *Measure coverage* | **Covered, 83 %** — paragraph 3 of 6, entailment 0.8253 |
+| `wochenzeitung.eth` | `Im vergangenen Quartal stieg der Umsatz um vierzig Prozent.` → *Measure coverage* | **Not measured** — the paragraph says four; a number the text never states cannot be covered, so no model is asked |
+| `wochenzeitung.eth` | `Roth hat zugegeben, dass die Zahlen manipuliert wurden.` → *Measure coverage* | **9 %** — on the same topic, not covered |
+
+The first measurement downloads about 400 MB of models into the browser, once.
+
+The last row is the argument for the whole third stage: on plain similarity, that false
+quote scored **0.880** against the paragraph it distorts — *higher* than a correct
+translation of that paragraph at **0.877** (`CONCEPT.md` §3).
 
 ## The problem
 
 Quoting out of context is the most common form of disinformation, and there is no
 infrastructure against it. A link breaks when the original is deleted. A screenshot can be
-forged by anyone. And the moment a quote crosses a language border, even a careful reader
-has no way to check it.
+forged by anyone. And once a quote crosses a language border, even a careful reader has no
+way to check it.
 
-Citable does not ask *"is this quote real?"* It answers a different question:
-**"here is the proof that I quoted correctly."**
+Nobody can prove a sentence was never said — nobody holds every word a person spoke. So
+Citable turns the burden around. It does not ask *"is this quote real?"* It lets the person
+quoting say **"here is the proof that I quoted correctly."**
 
 ## How it works
 
-A statement is split into paragraphs at blank lines. Each paragraph is bound to its
-position and hashed into a merkle tree; only the 32-byte root goes on chain, together with
-the author, an ENS node, a timestamp and the CID of an IPFS bundle holding the full text.
+```mermaid
+flowchart LR
+    T["Statement"] -->|split at blank lines| P["Paragraphs 0…n-1"]
+    P -->|"leaf = H(H(index, text))"| M["Merkle tree"]
+    M -->|32-byte root| C[("CitableRegistry<br/>Sepolia")]
+    P -->|bundle| I[("IPFS")]
+    I -->|CID| C
+    Q["A quote"] --> V{"Browser rebuilds<br/>the tree from the bundle"}
+    I --> V
+    C -->|verifySegment| V
+    V --> R["Proven · Part of a paragraph<br/>Not found · Coverage %"]
+```
+
+### The leaf
 
 ```
 leaf = keccak256(keccak256(abi.encode(uint256 index, string segment)))
 ```
 
 The index sits *inside* the leaf. `merkletreejs` sorts sibling pairs, which discards their
-order — without the index in the leaf, a proof would show membership but not position, and
-position is the entire point.
+order — without the index, a proof would show membership but not position, and position is
+the entire claim. The double hash is the OpenZeppelin convention against second-preimage
+attacks. `test/Leaf.t.sol` calls the JavaScript implementation over FFI and compares it
+against the Solidity one on every run, so the two cannot drift apart unnoticed.
 
-Verification runs as a cascade, and each stage answers a different question:
+### Segmentation rule
 
-| Stage | Question | Nature |
-|---|---|---|
-| 1 · Wording | Is this paragraph in the statement, at which position? | **proof** |
-| 2 · Excerpt | Is the fragment cut out of a paragraph? | **fact** |
-| 3 · Coverage | Is the claim covered by the text, in any language? | **measurement** |
-
-Stage 3 exists because translations and rewordings share no bytes with the original. It
-uses embeddings to find candidates and an NLI model to judge whether the claim is actually
-*covered* — not merely on the same topic. The distinction matters: measured on 16 cases,
-plain similarity rated a distorted quote (0.880) higher than a faithful translation
-(0.877). Entailment plus a deterministic value check separates them by 0.235.
-
-A stage-3 percentage means **"no distorted quote in our test set reached this score"** —
-not "83% true". The paragraph is always shown in full next to it, so the reader judges.
-
-## Segmentation rule
-
-Verifier and author must build the same tree, so the rule is fixed and deliberately dumb:
+Author and verifier must build the same tree, so the rule is fixed and deliberately dumb:
 
 - split on `\n\n` (blank line) — paragraphs, not sentences
 - trim whitespace at both ends of each segment
 - drop empty segments
 - UTF-8, no normalisation
 
-Sentence boundary detection is language-dependent and two implementations disagree.
-Paragraphs are unambiguous. This costs granularity and saves a day of debugging.
+Sentence boundary detection is language-dependent, and two implementations disagree.
+Paragraphs are unambiguous. This costs granularity and buys agreement.
 
-## Why a blockchain
+### Three stages, three kinds of answer
 
-Publicly readable, writable without permission, and not retroactively alterable by anyone.
-A registry run by a company would introduce exactly the central authority this project
-exists to avoid. There is no database and no indexer, and verifying needs no service at
-all: the verifier fetches the text, rebuilds the tree locally and produces the proof
-themselves. Publishing uses one small server-side helper, for reachability only — see
-[Where the bundle actually lives](#where-the-bundle-actually-lives).
+| Stage | Question | Nature of the answer |
+|---|---|---|
+| 1 · Wording | Is this paragraph in the statement, and at which position? | **proof** — checked by the contract |
+| 2 · Excerpt | Was the fragment cut out of a paragraph? | **fact** — shown with the full paragraph |
+| 3 · Coverage | Is the claim covered by the text, in any language? | **measurement** — and it can be wrong |
 
-## Identity: who may claim a name
+Stage 3 exists because translations share no bytes with the original. It uses a
+multilingual embedding model to find candidate paragraphs and an NLI model to judge whether
+the claim is *entailed* — not merely on the same topic. Before either model runs, a
+deterministic value check (`lib/citable/guards.mjs`) refuses claims that introduce a number
+or a form of address the paragraph never states — the two things a forger changes most
+often, and the two a model is vaguest about.
 
-`registerRoot` used to take an `ensNode` and never look at it — anyone could publish under
-anyone's name. The check now sits behind `INameGuard`, and `ENSv2NameGuard` implements it
-against the real ENSv2 registry on Sepolia.
+A stage-3 percentage means **"no distorted quote in the test set reached this value"**,
+never "83 % true". The paragraph is always shown in full next to it, so the reader judges.
+The measurements behind these decisions are in [`CONCEPT.md`](CONCEPT.md) §3, produced by
+`script/js/similarity-probe.mjs`, `nli-probe.mjs` and `entailment-eval.mjs`.
 
-It is not a pure ownership check. The name holder may publish, and so may anyone the holder
-granted the publish role to. That is what a newsroom actually looks like: a volunteer
-publishes under the newspaper's name without owning it. Every `.eth` registration on
-Sepolia grants its holder `ROLE_SET_RESOLVER` together with the admin bit for it, so the
-delegation is real and the fork test asserts it rather than assuming it.
+## What lives where
 
-Two details cost the most time and are worth writing down:
+| Where | What | Why there |
+|---|---|---|
+| **Sepolia** | root, author, ENS node, timestamp, paragraph count, CID | 32 bytes, immutable, publicly checkable |
+| **IPFS** | the bundle: full text as indexed paragraphs | too large for the chain; the CID binds it |
+| **The reader's browser** | tree rebuild, proof, stage 3 | nothing to trust in between |
+| **`api/pin.mjs`** (Vercel function) | pins a bundle when a statement is registered from the site | a browser must never hold a pinning key |
 
-- **Token ids are not labelhashes.** ENSv2 keeps `tokenVersionId` in the lower 32 bits of
-  the id, so `ownerOf(labelhash(name))` returns `0x0` for *every* name. A live name on
-  Sepolia currently sits at version 9. The guard therefore never derives an id; it asks
-  the registry, which resolves the version itself. `script/js/ens-probe.mjs` proves this
-  against names it discovers from mint events.
-- **`ensNode` is the ENSv2 id of a name — `labelhash(label)`, not an ENSv1 namehash.** A
-  namehash cannot be turned back into a label, and without the label the registry finds no
-  entry. Version 1 therefore covers the names of one registry; subnames would need a walk
-  down `getSubregistry`.
+**Checking a quote needs no service at all.** There is no database and no indexer: the
+statements under a name are found through the indexed `ensNode` topic of the registry's
+event, the bundle is fetched from IPFS, and the browser rebuilds the tree and asks the
+contract. Several sources race for the bundle, and the first whose bytes **rebuild the root**
+wins — a source serving anything else loses the race instead of being believed. The screen
+names the source that answered.
+
+**Publishing uses one small helper, for reachability only.** A CID nothing serves is a dead
+link, and the register screen cannot pin by itself. So on the click that registers,
+`api/pin.mjs` pins the bundle *first*; only then is the transaction offered. The function
+accepts a bundle only if it rebuilds the root the browser states, pins the bytes exactly as
+received, and the browser checks the returned CID against its own. It can refuse — then the
+screen asks the author to keep the bundle and sends nothing. It cannot make a false bundle
+pass, because every bundle is anchored to the root on chain.
+
+## Identity: who may publish under a name
+
+With the guard set, `registerRoot` requires the caller to be allowed under the ENS name it
+claims. `ENSv2NameGuard` implements `INameGuard` against the ENSv2 registry on Sepolia.
+
+It is not a pure ownership check. The holder may publish, and so may anyone the holder
+granted the publish role (`ROLE_SET_RESOLVER`) for that name — what a newsroom looks like:
+an editor publishes under the paper's name without owning it. Both paths are covered by a
+fork test against the live registry.
+
+Two details cost the most time:
+
+- **Token ids are not labelhashes.** ENSv2 keeps a version in the lower 32 bits of the id,
+  so `ownerOf(labelhash(name))` returns `0x0` for every name. The guard never derives an id;
+  it asks the registry, which resolves the version itself (`script/js/ens-probe.mjs`).
+- **`ensNode` is `labelhash(label)`, not an ENSv1 namehash.** A namehash cannot be turned
+  back into a label, and without the label the registry finds no entry. Version 1 covers
+  second-level names of one registry.
+
+## Deployments
+
+| | Sepolia |
+|---|---|
+| `CitableRegistry` | [`0xD3B137b6c6f572290Cf91ac312319364822792e7`](https://sepolia.etherscan.io/address/0xd3b137b6c6f572290cf91ac312319364822792e7#code) — verified |
+| `ENSv2NameGuard` | [`0x67732407626BCb5D5610887EC97782c610F5E8d2`](https://sepolia.etherscan.io/address/0x67732407626bcb5d5610887ec97782c610f5e8d2#code) — verified, wired |
+| ENSv2 `ETHRegistry` | `0xBDC85dD5b15D7ecb354cd7cb6f2c50b4f2c4F0E2` |
+| Frontend | [citable-pi.vercel.app](https://citable-pi.vercel.app/) — static export plus one function |
+| IPFS gateway | `indigo-broad-pig-566.mypinata.cloud` |
+
+`statementCount()` reads **8**. The three published from this repository have their source
+text in [`statements/`](statements/) and a record in [`deployments/statements/`](deployments/statements/):
+
+| Statement | Name | Root | Paragraphs |
+|---|---|---|---|
+| [`anhoerung.txt`](statements/wochenzeitung/anhoerung.txt) | `wochenzeitung.eth` | `0xa2ea6730…891ebc4b` | 7 |
+| [`quartalszahlen.txt`](statements/wochenzeitung/quartalszahlen.txt) — verbatim the stage-3 evaluation corpus | `wochenzeitung.eth` | `0x2690f5f5…33b45caf` | 6 |
+| [`gettysburg.txt`](statements/frederik/gettysburg.txt) | `frederik.eth` | `0x78e0a0fd…14c4e972` | 4 |
+
+The other five were registered through the site while it was being built. Four of them
+went on chain before pinning from the site worked, and carry CIDs no node serves — the
+failure `api/pin.mjs` exists to prevent. They stay, because nothing on chain can be removed.
 
 ## Status
 
-Honest state of the repository, not a plan.
-
 | | |
 |---|---|
-| Leaf hashing, JS ↔ Solidity parity proven | ✅ 6 tests |
+| Leaf hashing, JS ↔ Solidity parity | ✅ 6 tests, FFI against the JS implementation |
 | `CitableRegistry` with position proofs | ✅ 13 tests |
-| Client library (segment, tree, bundle, CID, guards) | ✅ 60 JS tests |
 | JS-built proofs accepted by the contract | ✅ 4 tests |
-| ENSv2 token id derivation resolved | ✅ `script/js/ens-probe.mjs` |
 | `INameGuard` gate on `registerRoot` | ✅ 12 tests |
-| `ENSv2NameGuard` incl. Sepolia fork test | ✅ 15 + 5 tests |
-| Layer 3 approach measured and chosen | ✅ 3 probe scripts |
-| Deploy path proven on a Sepolia fork | ✅ broadcast + smoke test |
-| Deployment to Sepolia proper | ✅ deployed, verified, guard wired |
-| Verify screen, stages 1 and 2 | ✅ run against the live registry |
-| Search by ENS name, no indexer | ✅ indexed `ensNode` topic |
-| CID computed without kubo | ✅ 7 tests against kubo's own vectors |
-| IPFS write path | ✅ `script/js/publish.mjs`, round trip proven |
-| A real ENSv2 name on Sepolia | ✅ `wochenzeitung.eth`, guard stayed armed |
-| Statements registered on chain | ✅ 2, both under that name |
-| Stage 3 in the browser | ✅ reproduces the measured numbers in a real browser |
-| Register screen | ✅ browser root and CID match the publisher's |
-| Landing page | ✅ five sections, two of them move |
-| Production build | ✅ `next build`, all routes static |
-| Pinned to a service | ✅ both bundles, served by a dedicated gateway |
-| Deployed frontend | ❌ needs a Vercel account |
-| Author screen | ❌ not built — on the cut list |
-| Video | ❌ not started |
+| `ENSv2NameGuard`, incl. a fork test against Sepolia | ✅ 15 + 5 tests |
+| Client library: segment, tree, bundle, CID, value check, pin gate | ✅ 68 JS tests |
+| CID computed without kubo | ✅ checked against kubo's own vectors |
+| Contracts deployed and verified on Sepolia | ✅ guard armed from the first statement |
+| Verify screen, stages 1 and 2, search by ENS name without an indexer | ✅ live |
+| Stage 3 in the browser | ✅ live, reproduces the measured numbers |
+| Register screen, pinning before the transaction | ✅ live |
+| Author screen | ❌ not built — cut for time |
 
-Stage 3 run against the live registry, in Chromium, with the models fetched at runtime:
+CI runs `forge fmt --check`, `forge build` and `forge test` on every push
+([`.github/workflows/test.yml`](.github/workflows/test.yml)).
 
-| Typed in | Answer |
-|---|---|
-| `Revenue rose by four percent last quarter.` | covered, 0.8253 entailment — CONCEPT.md measured 0.821 for this case in Node |
-| `…stieg der Umsatz um vierzig Prozent.` | not measured at all: the value check found the number 40 in a paragraph that says four |
-| `Roth hat zugegeben, dass die Zahlen manipuliert wurden.` | 9 % — the false quote that scored 0.880 on similarity, above a correct translation |
+## Repository layout
 
-The last row is the whole argument in one line.
+```
+src/            Solidity: CitableRegistry, Leaf, INameGuard, ENSv2NameGuard
+test/           Foundry tests; test/js/ holds the client library tests
+script/         Deploy.s.sol, and script/js/: publish, pin, ENS and the stage-3 measurements
+lib/citable/    The client library — the one implementation of segment, leaf, tree, bundle, CID
+api/            pin.mjs, the Vercel function that pins a bundle for the register screen
+frontend/       Next.js app, exported statically; imports lib/citable/ through an alias
+statements/     Source text of every statement published from this repository
+deployments/    Deployed addresses and one record per published statement
+CONCEPT.md      The specification, with the measurements the decisions rest on
+notes/          The working journal, chapter by chapter (German)
+prompts/        The briefs given to Claude Code, kept as written (German)
+design/         Hero variants and the screenshot above
+```
 
-## Run it
+## Run it locally
 
 ```bash
 forge install
 npm install          # required: the parity tests shell out to the JS implementation
-forge test           # 55 tests; 5 of them need SEPOLIA_RPC_URL and skip without it
-npm test             # 60 client library tests
+forge test           # 55 tests; the 5 fork tests need SEPOLIA_RPC_URL and skip without it
+npm test             # 68 client library tests
 
-cp .env.example .env # SEPOLIA_RPC_URL enables the ENSv2 fork test
-node script/js/ens-probe.mjs          # ENSv2 reachability and token id derivation
-node script/js/entailment-eval.mjs    # layer 3 evaluation, downloads a model on first run
+cd frontend && npm install && npm run dev
 ```
 
-## Deploy
+| Variable | |
+|---|---|
+| `SEPOLIA_RPC_URL`, `PRIVATE_KEY`, `ETHERSCAN_API_KEY` | `.env` — deploying and publishing from the command line |
+| `PINATA_JWT` | Server-side only, never with a `NEXT_PUBLIC_` prefix. Used by `publish.mjs`, `pin.mjs` and `api/pin.mjs` |
+| `NEXT_PUBLIC_SEPOLIA_RPC_URL` | Optional. Without it viem uses a rate-limited public endpoint |
+| `NEXT_PUBLIC_IPFS_GATEWAYS` | Optional. Comma-separated gateway prefixes |
+
+Under `next dev` the pinning function does not exist, and the register screen says so and
+falls back to the download; `vercel dev` runs it.
+
+### Deploy
 
 ```bash
-forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL                       # dry run
+forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL                      # dry run
 forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL \
-  --private-key $PRIVATE_KEY --broadcast --verify                                 # for real
+  --private-key $PRIVATE_KEY --broadcast --verify                                # for real
 ```
 
-It deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
-`deployments/sepolia.json`. A dry run writes nothing.
+Deploys `CitableRegistry`, then `ENSv2NameGuard`, wires them and writes
+`deployments/sepolia.json`.
 
-| Contract | Sepolia |
-|---|---|
-| `CitableRegistry` | [`0xD3B137b6c6f572290Cf91ac312319364822792e7`](https://sepolia.etherscan.io/address/0xd3b137b6c6f572290cf91ac312319364822792e7#code) |
-| `ENSv2NameGuard` | [`0x67732407626BCb5D5610887EC97782c610F5E8d2`](https://sepolia.etherscan.io/address/0x67732407626bcb5d5610887ec97782c610f5e8d2#code) |
-| ENSv2 `ETHRegistry` | `0xBDC85dD5b15D7ecb354cd7cb6f2c50b4f2c4F0E2` |
-
-Both are verified on Etherscan. The guard is wired and live, so `registerRoot` requires a
-name in the ENSv2 registry above.
-
-## Publish a statement
+### Publish a statement from the command line
 
 ```bash
-node script/js/ens-register.mjs <label> --broadcast          # get a real ENSv2 name
-node script/js/publish.mjs <textfile> --name=<label>          # simulate the whole path
+node script/js/ens-register.mjs <label> --broadcast            # a real ENSv2 name on Sepolia
+node script/js/publish.mjs <textfile> --name=<label>            # simulate the whole path
 node script/js/publish.mjs <textfile> --name=<label> --broadcast
-node script/js/pin.mjs <bundle.json>                          # pin a bundle built elsewhere
+node script/js/pin.mjs <bundle.json>                            # pin a bundle built elsewhere
 ```
 
-`publish.mjs` refuses to send anything until three things hold: the CID this repo computes
-equals the CID `kubo` computes, the bytes read back out of IPFS rebuild the root, and the
-deployed contract accepts a proof at the right index while refusing the same segment at
-another. It writes the source text into `statements/`, a record into
-`deployments/statements/`, and a copy of the bundle into `frontend/public/bundles/`.
+`publish.mjs` sends nothing until three things hold: the CID computed here equals the one
+`kubo` computes, the bytes read back from IPFS rebuild the root, and the deployed contract
+accepts a proof at the right index while refusing the same paragraph at another.
 
-Registered on Sepolia so far, both under `wochenzeitung.eth` and both with the name guard
-armed:
-
-| Statement | Root | Paragraphs |
-|---|---|---|
-| `statements/wochenzeitung/anhoerung.txt` | `0xa2ea6730…891ebc4b` | 7 |
-| `statements/wochenzeitung/quartalszahlen.txt` | `0x2690f5f5…33b45caf` | 6 |
-
-## Where the bundle actually lives
-
-The CID on chain is the hash of the bundle's bytes, so it is real the moment it is
-computed — but a CID nothing serves is a dead link. Three sources are tried at once and the
-first whose bytes **rebuild the root** wins; a source serving anything else loses the race
-rather than being believed. Because of that anchor, where a bundle came from costs nothing
-in trust, and the screen names the source it used.
-
-| Source | Configuration |
-|---|---|
-| Public gateways | `NEXT_PUBLIC_IPFS_GATEWAYS`, comma separated. Defaults to w3s.link and ipfs.io. |
-| A pinning service | Set `PINATA_JWT` in `.env` and `publish.mjs` pins there too. Nothing else changes. |
-| This app's own copy | `frontend/public/bundles/<cid>.json`, written on every publish. Last in the race, and labelled as such on screen. |
-
-### Who does the pinning
-
-`publish.mjs` pins from a laptop that has the key. The register screen in the browser does
-not have one and must not — anything in a page is readable by whoever opens it. It used to
-answer that by making the author download the bundle and pin it by hand, and that does not
-work: three statements are on chain under `wochenzeitung.eth` whose CIDs no node serves,
-registered through exactly that screen.
-
-So `api/pin.mjs` holds the key server-side and pins on the author's behalf, **before** the
-transaction is offered. The order is the whole fix — reversed, the CID is immutable before
-the bytes exist anywhere.
-
-The screen is three steps now: the text, the name, and one button that connects a wallet if
-needed, pins, and sends. Keeping a copy of the bundle is still offered, as an answer to
-"what if this deployment's pin lapses" rather than as a step. It becomes a requirement
-again — and the button refuses to send — only when the pinning actually failed.
-
-The function accepts a bundle only if it rebuilds the root the client states, using the
-same `verifyBundle` a verifier runs (`lib/citable/bundle.mjs`). It pins the bytes exactly as
-received, never a re-serialised object: `bundleBytes` writes JSON in object order, so a
-round trip through an object could move the CID. The browser then holds the CID it gets
-back against the one it computed itself and refuses to register if they differ.
-
-None of this is trust. The function can make a bundle reachable or fail to; it cannot make
-a false one pass, because a bundle is anchored by the root on chain and a tampered one
-loses the race in `frontend/src/lib/ipfs.ts`. It is, however, a second point of
-centralisation next to the registry owner — listed under [Limitations](#limitations).
-
-A bundle registered through the browser gets **no** `frontend/public/bundles/` copy; that
-file is written by the publishing scripts, which run against the repo. Browser-registered
-statements therefore hang on the pinning service alone. `script/js/pin.mjs <bundle.json>`
-pins an existing bundle after the fact and writes that second copy — it is how the three
-dead CIDs above get revived, and it refuses any file whose bytes do not reproduce its CID.
-
-The bundles published from the repo are pinned. Pinata returns the identical CID for them — `cidVersion: 1` on a
-file this small produces the same single raw block `ipfs add` does, so the pin really does
-cover what is on chain, which was not obvious in advance and had to be measured. The
-dedicated gateway answers with `access-control-allow-origin: *`, so a browser can read it;
-the shared `gateway.pinata.cloud` does not serve it and is not used.
-
-The app's own copy is still shipped and still last in the race. It is the answer to "what
-if the pinning service lapses", not the primary path.
-
-## The frontend
+### Reproduce the measurements
 
 ```bash
-cd frontend
-npm install
-npm run dev
+node script/js/similarity-probe.mjs   # why similarity alone fails
+node script/js/nli-probe.mjs          # why entailment separates the cases
+node script/js/entailment-eval.mjs    # the 16-case evaluation behind the threshold
+node script/js/coverage-en.mjs        # the same questions on an English statement
 ```
 
-| | |
-|---|---|
-| `NEXT_PUBLIC_SEPOLIA_RPC_URL` | Optional. Without it viem uses a public Sepolia endpoint, which is rate limited. |
-| `NEXT_PUBLIC_IPFS_GATEWAYS` | Optional. Comma-separated gateway prefixes, tried before the local copy. |
-| `PINATA_JWT` | Server-side only, no `NEXT_PUBLIC_` prefix. Without it the register screen falls back to asking the author to download and pin the bundle by hand. |
-
-Reading is entirely client-side. The one exception is on the write path: `api/pin.mjs`
-pins a bundle before the transaction is offered, because a browser cannot hold a pinning
-key. It is a Vercel function at the repo root, not a route of this app — the export stays
-`output: "export"`. Under `next dev` it is not there at all and the screen says so;
-`vercel dev` runs it.
-
-`lib/citable/` is imported through an alias, never copied — a second copy of the leaf
-formula is exactly the drift `test/ProofBridge.t.sol` exists to prevent.
-
-Stage 3 downloads about 400 MB of models on first use and only when asked. Nothing is sent
-anywhere for it, and nothing is downloaded before the button is pressed. The one upload
-this app ever makes is the bundle on the register screen, and only on the click that
-registers it.
+Models are downloaded on the first run.
 
 ## Limitations
 
-- **Stage 3 is a measurement, not a proof.** It can be wrong, and it is labelled as such.
-- **Stage 3 pulls code and weights from third parties.** transformers.js comes from jsDelivr
-  and the two models from huggingface.co. It cannot be bundled: the library reads `fs` at
-  import time to decide whether it is on a server, and Turbopack compiles a bare node
-  builtin in a browser bundle to `void 0`, so `Object.keys(void 0)` killed it on
-  evaluation. Worth stating plainly — and worth noting what it does not touch. Stages 1
-  and 2 depend on nothing but the chain and the bytes.
-- **Spanish is weak** (0.562 vs 0.821 for English) and would be rejected at threshold 0.80.
-  A false negative — annoying, not dangerous.
+**Stage 3**
+
+- **It is a measurement, not a proof,** and it can be wrong. It is labelled as such on
+  every result.
 - **16 test cases are a signal, not a validation.** Real confidence needs 50–100.
-- **Irony and quote-within-quote are not handled.** Question-vs-claim is (0.087 vs 0.931).
-- **Not registered ≠ fabricated.** Absence proves nothing about unregistered text.
-- **The name check is off until a guard is set.** With `nameGuard` at `address(0)` anyone
-  can still claim any name; the deploy script sets the guard in the same run.
-- **The registry owner can switch the guard off again.** A known central point. It cannot
-  alter statements already registered, and no proof depends on it.
-- **The guard covers one registry, second-level names only.** Subnames need a walk down
-  `getSubregistry` and are not built.
-- **A name that changes hands takes its publishing right with it.** Statements already
-  registered keep their recorded `ensNode`; the guard only governs new ones.
-- **First registration wins.** Identical text yields an identical root, so someone can
-  register another author's text first. Documented, not yet fixed.
-- **`segmentCount` on chain is a claim, not a proof.** A root does not reveal how many
-  leaves it has, so the contract cannot check the number. It is only the range check in
-  `verifySegment`. The honest *n* comes from the IPFS bundle: a bundle that matches the
-  root cannot have a paragraph added, dropped or moved, so its length is proven. The
-  interface must read "paragraph i of n" from the bundle, never from the chain.
-- **The root does not cover the vectors.** It commits to index and text. The vectors are
-  bound to the bundle by its CID, and the CID is on chain — but see the next point.
-- **The registered bundles carry no vectors, so stage 3 embeds at query time.** It is not a
-  gap in the argument: the paragraphs it embeds were already held against the root, and a
-  client that computes them itself with a named model has to trust the publisher's numbers
-  even less than CONCEPT.md 3 assumes. What it costs is time, not trust — the browser
-  already has the embedding model loaded to embed the query.
-- **The register screen pins through a server the deployment owns.** A browser cannot hold
-  a pinning key, so `api/pin.mjs` holds one and pins before the transaction goes out. That
-  is a second point of centralisation next to the registry owner. It cannot forge anything
-  — a bundle is anchored by `verifyBundle` against the root on chain — but it can refuse,
-  and then the screen falls back to making the author download and pin by hand. Before
-  this existed, that fallback *was* the whole mechanism, and three statements went on
-  chain with CIDs nobody serves because of it.
-- **The pinning endpoint is open.** It takes any well-formed bundle, which keeps it from
-  being a general file host but does not stop anyone from filling the pinning quota with
-  bundles over junk text. There is no rate limit and no account. Known and not fixed.
-- **Availability still rests on one pinning account.** The bundles are pinned and a public
-  gateway serves them, but if that account lapses the only remaining holder is the copy the
-  app ships — and statements registered through the browser have no such copy, because it
-  is written by the publishing scripts against the repo. `script/js/pin.mjs` adds one after
-  the fact. Better than one origin, not yet many.
-- **The contract cannot check that the CID matches the root.** It never sees the text. A
+- **Paraphrase is unstable on the English statement.** The same claim phrased three ways
+  scored 0.9536, 0.6100 and 0.1125 — and the 0.1125 is a correct paraphrase
+  (`script/js/paraphrase-probe.mjs`). The error is on the safe side, a missed match rather
+  than a false confirmation, but it is not a small one. On that text the similarity
+  inversion does not reproduce either: the translation leads the forgery, 0.8845 to 0.8463.
+- **Spanish is weak** (0.562 against 0.821 for English on the German corpus) and falls
+  below the 0.80 threshold.
+- **Irony and quote-within-quote are not detected.** Question against claim is.
+- **It pulls code and weights from third parties** — transformers.js from jsDelivr, the
+  models from huggingface.co. The library cannot be bundled here: it reads `fs` at import
+  time, and Turbopack compiles a bare Node builtin in a browser bundle to `void 0`. Stages
+  1 and 2 depend on nothing but the chain and the bytes.
+
+**The register**
+
+- **Not registered ≠ fabricated.** Absence says something about this registry, not about
+  the world.
+- **First registration wins.** Identical text gives an identical root, so anyone can
+  register another author's text first. Documented, not solved.
+- **`segmentCount` on chain is a claim.** A root does not reveal how many leaves it has.
+  The interface takes *n* from the bundle, which was checked against the root, never from
+  the chain.
+- **The contract cannot check that a CID matches its root.** It never sees the text. A
   mismatch makes the statement unverifiable, so lying only hurts the author.
-- Paragraph granularity, not sentence granularity.
-- The cold start problem is unsolved. No hackathon project solves it.
+- **Paragraph granularity, not sentence granularity.**
+- **The cold start problem is unsolved.** A register is worth as much as what is in it.
+
+**Names**
+
+- **The registry owner can switch the guard off again.** A known central point; it cannot
+  alter statements already registered, and no proof depends on it.
+- **With the guard set, a name is required.** Anonymous registration is not possible.
+- **One registry, second-level names only.** Subnames need a walk down `getSubregistry`.
+- **A name that changes hands takes its publishing right with it.** Earlier statements
+  keep their recorded name; the verify screen does not show that the holder has changed.
+
+**Availability**
+
+- **Pinning from the site runs through a function the deployment owns** — a second central
+  point next to the registry owner. It can refuse, not forge. It is open, with no account
+  and no rate limit: the bundle check stops arbitrary uploads, not someone filling the
+  quota with bundles over junk text.
+- **Availability rests on one pinning account.** Statements published from the repository
+  also ship as a copy inside the app; statements registered through the site hang on the
+  pin alone until `script/js/pin.mjs` adds that copy.
 
 ## Prior art
 
-C2PA / Content Credentials, Soft Binding Resolution, Numbers Protocol, Chainpoint.
-Citable differs in two ways: the position proof *within* a statement, and the honest
-fallback when no proof exists.
-
-## Dependencies
-
-The client library and every test depend on `viem` and `merkletreejs` only, and
-`npm audit --omit=dev` reports nothing. `@xenova/transformers` is a dev dependency: it
-runs the layer-3 measurement scripts and ships nothing. It carries known advisories
-through `onnxruntime-web` and `sharp`; the fix is a downgrade that would change the
-numbers recorded in `CONCEPT.md`, so it stays pinned and out of the runtime path.
+C2PA / Content Credentials, Soft Binding Resolution, Numbers Protocol, Chainpoint. Citable
+differs in two ways: the position proof *within* a statement, and an honest answer when no
+proof exists.
 
 ## AI usage
 
-Contracts, scripts and tests were developed with Claude Code. Architecture, design
-decisions and verification by the author. Declared honestly — AI use is permitted at
-ETHGlobal, a false statement is not.
+Contracts, frontend, scripts and tests were written with Claude Code. Architecture, design
+decisions and verification are the author's. The briefs given to it are published in
+[`prompts/`](prompts/), and the working journal in [`notes/`](notes/). AI use is permitted
+at ETHGlobal; declaring it honestly is part of the submission.
 
 ## License
 
