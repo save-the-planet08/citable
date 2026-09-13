@@ -3,6 +3,7 @@ import { Idea } from "@/components/Idea";
 import { Doors } from "@/components/Doors";
 import { HowItHolds } from "@/components/HowItHolds";
 import { Cascade } from "@/components/Cascade";
+import { BinaryAndGrey } from "@/components/BinaryAndGrey";
 import { SameMeaning } from "@/components/SameMeaning";
 import { Limits } from "@/components/Limits";
 import { REGISTRY } from "@/lib/chain";
@@ -19,6 +20,7 @@ export default function Home() {
         <Doors />
         <HowItHolds />
         <Cascade />
+        <BinaryAndGrey />
         <SameMeaning />
         <Limits />
 

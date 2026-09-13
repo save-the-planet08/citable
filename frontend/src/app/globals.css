@@ -104,6 +104,18 @@ h3 {
   );
 }
 
+/* The same hatching as stage 3, for the one dark band on the page. A measurement has to
+ * look like a measurement on either ground. */
+.hatched-invert {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    color-mix(in srgb, #ffffff 14%, transparent) 5px,
+    color-mix(in srgb, #ffffff 14%, transparent) 6px
+  );
+}
+
 .field {
   width: 100%;
   font-family: var(--font-ui), system-ui, sans-serif;
