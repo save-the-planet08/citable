@@ -4,7 +4,7 @@
 sondern: **"Wurde diese Aussage gemacht?"** — auch dann, wenn sie in einer anderen Sprache
 oder anderen Worten zitiert wird.
 
-Dieses Dokument ist die Arbeitsbasis. `IDEA.md` beschreibt nur die erste Schicht und ist
+Dieses Dokument ist die Arbeitsbasis. `notes/IDEA.md` beschreibt nur die erste Schicht und ist
 damit unvollständig.
 
 ---

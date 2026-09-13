@@ -2,13 +2,18 @@
 
 Verifizierbares Publishing-Register mit Positionsbeweis. ETHOnline 2026, Abgabe 16.09.2026.
 
-**Laufendes Kapitel: `WALKTHROUGH.md`** — das Produkt steht, jetzt wird nachgeprüft. Dort
-stehen die sieben Eingaben, die Adressen und die Stellen, an denen sich jede Behauptung
-unabhängig widerlegen ließe. `NIGHT.md` ist abgeschlossen (das Bauen), `REVIEW.md`
-ebenfalls und dient nur noch als Nachschlagewerk zu `src/`.
+**Laufendes Kapitel: `notes/WALKTHROUGH.md`** — das Produkt steht und ist live
+(https://citable-pi.vercel.app/), jetzt wird nachgeprüft. Dort stehen die sieben Eingaben,
+die Adressen und die Stellen, an denen sich jede Behauptung unabhängig widerlegen ließe.
+`notes/NIGHT.md` ist abgeschlossen (das Bauen), `notes/REVIEW.md` ebenfalls und dient nur
+noch als Nachschlagewerk zu `src/`.
+
+**Ordnung:** `prompts/` hält die Aufträge, die in Sessions eingefügt wurden, `notes/` das
+Arbeitsjournal. Beide sind Dokumente ihrer Zeit — Pfade darin beziehen sich auf das Repo,
+wie es damals aussah. Je ein `README.md` in beiden Ordnern ordnet sie ein.
 
 **Maßgebliche Spezifikation: `CONCEPT.md`** — beide Schichten, mit den Messwerten, auf denen
-die Entscheidungen beruhen. `IDEA.md` ist der erste Entwurf und kennt Schicht 3 nicht; es
+die Entscheidungen beruhen. `notes/IDEA.md` ist der erste Entwurf und kennt Schicht 3 nicht; es
 gilt nur noch für Tagesplan, Video-Skript und Bounty-Zuordnung. Bei Widerspruch gewinnt
 CONCEPT.md. Diese Datei hier ist der Einstieg pro Session, nicht die Spezifikation.
 
@@ -70,12 +75,15 @@ npm test                     # Client-Bibliothek
 Arbeitstag 4 (Fr 11.09., in der Nacht davor gebaut). Der volle Ablauf läuft zum ersten Mal
 wirklich durch: Text → Bündel → IPFS → Kette → Beweis im Browser.
 
-**Tests:** `forge test` 55 grün, `npm test` 60 grün (CID und Wertprüfung sind dazugekommen),
-`forge fmt --check`, `forge build` und `next build` ohne Warnung. `next build` erzeugt nur
-statische Routen — der Vercel-Deploy ist ein Konfigurationsschritt, kein Umbau.
+**Tests:** `forge test` 55 grün, `npm test` 68 grün (CID, Wertprüfung und die
+Pinning-Eingangsprüfung sind dazugekommen), `forge fmt --check`, `forge build` und
+`next build` ohne Warnung. `next build` erzeugt nur statische Routen.
+
+**Live:** https://citable-pi.vercel.app/ — statischer Export plus `api/pin.mjs` als
+Vercel-Function (antwortet live, leerer POST → `400 empty body`).
 
 **`wochenzeitung.eth` gehört uns.** Der ENSv2-Registrar auf Sepolia nimmt ein Test-USDC mit
-öffentlichem `mint`, also war der zweite Weg aus NIGHT.md 2 doch offen. Damit **blieb der
+öffentlichem `mint`, also war der zweite Weg aus `notes/NIGHT.md` 2 doch offen. Damit **blieb der
 Guard die ganze Zeit scharf** — die drei Transaktionen mit Guard-Abschalten waren nicht
 nötig und sind nicht passiert. `script/js/ens-register.mjs` macht den Weg reproduzierbar.
 
@@ -162,7 +170,7 @@ Hero-Varianten liegen zur Wahl in `design/hero/` — gebaut ist Variante D.
 - **Mindestens ein aussagekräftiger Commit pro Arbeitstag.** ETHGlobal kann Einreichungen
   mit einem einzigen großen Commit disqualifizieren.
 - Conventional Commits, Englisch, Imperativ.
-- Der Tagesplan in IDEA.md 8 ist überholt (er kennt Schicht 3 nicht), die Abgabe am
+- Der Tagesplan in `notes/IDEA.md` 8 ist überholt (er kennt Schicht 3 nicht), die Abgabe am
   16.09. nicht. Liegt der Stand hinten, wird gestrichen — nicht die Nacht durchgearbeitet.
 
 ## Streichliste bei Zeitdruck
